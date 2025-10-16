@@ -1,0 +1,282 @@
+import Button from '@/components/Button';
+import Input from '@/components/Input';
+import { useColorScheme } from '@/components/useColorScheme';
+import Colors from '@/constants/Colors';
+import { useUser } from '@/contexts/UserContext';
+import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+// Get API base URL from the api service
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+const SignupScreen = () => {
+  const router = useRouter();
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme || 'light'];
+  const { login } = useUser();
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [agreeToPrivacy, setAgreeToPrivacy] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleTermsPress = () => {
+    router.push('/terms');
+  };
+
+  const handlePrivacyPress = () => {
+    router.push('/privacy');
+  };
+
+  const handleSignup = async () => {
+    // Validate all fields are filled
+    if (!fullName || !email || !password || !phone) {
+      Alert.alert('Error', 'Please fill in all fields.');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Error', 'Please enter a valid email address.');
+      return;
+    }
+
+    // Validate phone number (10 digits for India)
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      Alert.alert('Error', 'Please enter a valid 10-digit Indian mobile number (starting with 6, 7, 8, or 9).');
+      return;
+    }
+
+    // Validate password strength
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      Alert.alert('Error', 'Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character.');
+      return;
+    }
+
+    // Check if terms are agreed (single checkbox now)
+    if (!agreeToTerms) {
+      Alert.alert('Error', 'Please agree to the Terms and Privacy Policy.');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      // Generate OTP
+      const response = await fetch(`${API_BASE_URL}/otp/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }), // Changed from phone to email
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Navigate to OTP verification screen
+        router.push({
+          pathname: '/otp-verification',
+          params: {
+            fullName,
+            email,
+            phone,
+            password,
+          }
+        });
+      } else {
+        Alert.alert('Error', result.error || 'Failed to send OTP. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      Alert.alert('Signup Failed', error.message || 'Signup failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.primary }]}>
+        <Text style={styles.headerTitle}>Create Account</Text>
+        <Text style={styles.headerSubtitle}>Start making a difference today</Text>
+      </View>
+      
+      <View style={styles.content}>
+        <View style={[styles.card, { backgroundColor: colors.card }]}>
+          <View style={styles.inputContainer}>
+            <Input
+              placeholder="Full Name"
+              value={fullName}
+              onChangeText={setFullName}
+              autoCapitalize="words"
+              icon="user"
+            />
+          </View>
+          
+          <View style={styles.inputContainer}>
+            <Input
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              icon="mail"
+            />
+          </View>
+          
+          <View style={styles.inputContainer}>
+            <Input
+              placeholder="10-digit Mobile Number"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              maxLength={10}
+              icon="phone"
+            />
+          </View>
+          
+          <View style={styles.inputContainer}>
+            <Input
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              icon="lock"
+            />
+            <TouchableOpacity 
+              onPress={() => setShowPassword(!showPassword)} 
+              style={styles.showPasswordButton}
+            >
+              <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color={colors.gray} />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Single checkbox for both terms and privacy */}
+          <View style={styles.checkboxContainer}>
+            <TouchableOpacity 
+              style={styles.checkbox} 
+              onPress={() => setAgreeToTerms(!agreeToTerms)}
+            >
+              <Feather 
+                name={agreeToTerms ? 'check-square' : 'square'} 
+                size={20} 
+                color={agreeToTerms ? colors.primary : colors.gray} 
+              />
+            </TouchableOpacity>
+            <Text style={[styles.checkboxText, { color: colors.text }]}>
+              I agree to the 
+              <Text style={[styles.link, { color: colors.primary }]} onPress={handleTermsPress}> Terms of Service</Text>
+              {' '}and
+              <Text style={[styles.link, { color: colors.primary }]} onPress={handlePrivacyPress}> Privacy Policy</Text>
+            </Text>
+          </View>
+          
+          <Button 
+            title={isLoading ? "Creating Account..." : "Sign Up"} 
+            onPress={handleSignup} 
+            disabled={isLoading}
+            style={styles.signupButton}
+          />
+        </View>
+        
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: colors.gray }]}>Already have an account? </Text>
+          <TouchableOpacity onPress={() => router.push('/login')}>
+            <Text style={[styles.footerLink, { color: colors.primary }]}>Login</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 40,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 10,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    opacity: 0.9,
+  },
+  content: {
+    flex: 1,
+    marginTop: -30,
+    marginHorizontal: 20,
+  },
+  card: {
+    borderRadius: 20,
+    padding: 25,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  showPasswordButton: {
+    position: 'absolute',
+    right: 15,
+    zIndex: 1,
+    height: '100%',
+    justifyContent: 'center',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  checkbox: {
+    marginRight: 10,
+  },
+  checkboxText: {
+    fontSize: 14,
+    flex: 1,
+  },
+  link: {
+    fontWeight: '600',
+  },
+  signupButton: {
+    borderRadius: 16,
+    paddingVertical: 18,
+    marginTop: 10,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  footerText: {
+    fontSize: 16,
+  },
+  footerLink: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+});
+
+export default SignupScreen;

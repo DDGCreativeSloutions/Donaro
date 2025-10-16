@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donation Details - Donaro Admin Panel</title>
+    <link rel="icon" type="image/png" href="../assets/images/favicon.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .header {
+            background-color: #6C63FF;
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+        }
+        
+        .back-button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .back-button i {
+            margin-right: 0.5rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        .donation-header {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .donation-header h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .donation-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .meta-item {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .meta-item h3 {
+            font-size: 1rem;
+            color: #6C63FF;
+            margin-bottom: 0.5rem;
+        }
+        
+        .meta-item p {
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+        
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        .status-pending {
+            background-color: #F59E0B;
+            color: white;
+        }
+        
+        .status-approved {
+            background-color: #10B981;
+            color: white;
+        }
+        
+        .status-rejected {
+            background-color: #EF4444;
+            color: white;
+        }
+        
+        .photos-container {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .photo-card {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .photo-card h3 {
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .photo-placeholder {
+            width: 100%;
+            height: 300px;
+            background-color: #eee;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            margin-bottom: 1rem;
+        }
+        
+        .photo-meta {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+        
+        .photo-meta p {
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .actions-container {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .actions-container h3 {
+            margin-bottom: 1.5rem;
+            color: #2c3e50;
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        .btn {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        
+        .btn-approve {
+            background-color: #10B981;
+            color: white;
+        }
+        
+        .btn-reject {
+            background-color: #EF4444;
+            color: white;
+        }
+        
+        .btn-back {
+            background-color: #6C63FF;
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .photos-container {
+                flex-direction: column;
+            }
+            
+            .donation-meta {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="back-button" onclick="history.back()">
+            <i>←</i> Back to Donations
+        </button>
+        <h1>Donation Details</h1>
+        <div></div> <!-- Spacer for flex alignment -->
+    </div>
+    
+    <div class="container">
+        <div class="donation-header">
+            <h2>Winter Clothing Donation</h2>
+            <div class="donation-meta">
+                <div class="meta-item">
+                    <h3>User</h3>
+                    <p>John Doe</p>
+                </div>
+                <div class="meta-item">
+                    <h3>Date & Time</h3>
+                    <p>Jan 15, 2024 at 14:30</p>
+                </div>
+                <div class="meta-item">
+                    <h3>Location</h3>
+                    <p>Mumbai, Maharashtra</p>
+                </div>
+                <div class="meta-item">
+                    <h3>Status</h3>
+                    <span class="status-badge status-pending">Pending</span>
+                </div>
+            </div>
+            <div class="donation-meta">
+                <div class="meta-item">
+                    <h3>Quantity</h3>
+                    <p>3 bags of winter clothing</p>
+                </div>
+                <div class="meta-item">
+                    <h3>Receiver</h3>
+                    <p>Local Shelter Home</p>
+                </div>
+                <div class="meta-item">
+                    <h3>Credits</h3>
+                    <p>150 credits</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="photos-container">
+            <div class="photo-card">
+                <h3>Donation Photo</h3>
+                <div class="photo-placeholder">
+                    Donation Photo
+                </div>
+                <div class="photo-meta">
+                    <p><strong>Location:</strong> 19.0760° N, 72.8777° E</p>
+                    <p><strong>Timestamp:</strong> Jan 15, 2024 14:28:45</p>
+                    <p><strong>Device:</strong> iPhone 12</p>
+                </div>
+            </div>
+            
+            <div class="photo-card">
+                <h3>Selfie with Donation</h3>
+                <div class="photo-placeholder">
+                    Selfie Photo
+                </div>
+                <div class="photo-meta">
+                    <p><strong>Location:</strong> 19.0760° N, 72.8777° E</p>
+                    <p><strong>Timestamp:</strong> Jan 15, 2024 14:29:12</p>
+                    <p><strong>Device:</strong> iPhone 12</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="actions-container">
+            <h3>Admin Actions</h3>
+            <div class="action-buttons">
+                <button class="btn btn-approve" onclick="approveDonation()">Approve Donation</button>
+                <button class="btn btn-reject" onclick="rejectDonation()">Reject Donation</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function approveDonation() {
+            if (confirm('Are you sure you want to approve this donation?')) {
+                alert('Donation approved successfully!');
+                // In a real app, this would make an API call to update the donation status
+                window.location.href = 'index.html';
+            }
+        }
+        
+        function rejectDonation() {
+            if (confirm('Are you sure you want to reject this donation?')) {
+                const reason = prompt('Please provide a reason for rejection:');
+                if (reason) {
+                    alert('Donation rejected with reason: ' + reason);
+                    // In a real app, this would make an API call to update the donation status
+                    window.location.href = 'index.html';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
