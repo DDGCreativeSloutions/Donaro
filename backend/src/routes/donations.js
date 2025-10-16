@@ -46,6 +46,14 @@ router.get('/:id', async (req, res) => {
   try {
     const donation = await prisma.donation.findUnique({
       where: { id: req.params.id },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
     });
 
     if (!donation) {

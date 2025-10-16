@@ -57,7 +57,7 @@ router.post('/login', async (req, res) => {
     const { email, password, isAdmin } = req.body;
 
     // Check for predefined admin credentials
-    if (email === 'admin@donaro.com' && password === 'Admin@123') {
+    if (email === 'admin@donaro.com' && password === 'admin123') {
       // Generate token for admin user
       const token = generateToken('admin-user-id'); // In a real app, you would use a proper admin ID
 

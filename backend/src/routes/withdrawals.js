@@ -54,9 +54,17 @@ router.post('/', async (req, res) => {
     });
 
     // Emit real-time event for new withdrawal
-    io.to(userId).emit('withdrawalCreated', withdrawal);
-    // Emit event to admin room for real-time admin panel updates
-    io.to('admin').emit('withdrawalCreated', withdrawal);
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.to(userId).emit('withdrawalCreated', withdrawal);
+        // Emit event to admin room for real-time admin panel updates
+        io.to('admin').emit('withdrawalCreated', withdrawal);
+      }
+    } catch (socketError) {
+      console.warn('Failed to emit socket event:', socketError);
+      // Don't fail the request if socket emission fails
+    }
 
     res.status(201).json(withdrawal);
   } catch (error) {

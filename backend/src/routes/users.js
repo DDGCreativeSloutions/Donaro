@@ -6,6 +6,20 @@ const router = express.Router();
 // Get user by ID
 router.get('/:id', async (req, res) => {
   try {
+    // Handle special case for admin user
+    if (req.params.id === 'admin-user-id') {
+      return res.json({
+        id: 'admin-user-id',
+        name: 'Admin User',
+        email: 'admin@donaro.com',
+        phone: '9876543210',
+        totalCredits: 0,
+        lifetimeCredits: 0,
+        withdrawableCredits: 0,
+        totalDonations: 0,
+      });
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: req.params.id },
     });

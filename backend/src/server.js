@@ -50,6 +50,11 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../../admin/index.html'));
 });
 
+// Redirect /api/admin to /admin (for any incorrect URL patterns)
+app.get('/api/admin', (req, res) => {
+  res.redirect('/admin');
+});
+
 // Serve admin panel files (needed for files like donation-details.html)
 app.get('/admin/*', (req, res) => {
   const filePath = req.params[0];
