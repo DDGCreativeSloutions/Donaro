@@ -660,3 +660,5 @@ socket.on('donationCreated', (donation) => {
 socket.on('donationStatusUpdated', (donation) => {
   console.log('Donation status updated:', donation);
 });
+```
+

@@ -10,13 +10,10 @@ dotenv.config();
 
 // Initialize Express app
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL || 'https://yourdomain.com' : "*", // Replace with your actual domain
-    methods: ["GET", "POST"]
-  }
-});
+
+// For Vercel compatibility, we need to export the app
+// Vercel will handle the server creation
+const isVercel = process.env.NOW_REGION || process.env.VERCEL;
 
 // Middleware
 app.use(cors({
@@ -25,7 +22,11 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Serve static files (only in non-Vercel environments as Vercel handles this differently)
+if (!isVercel) {
+  app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+}
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -80,25 +81,6 @@ app.get('/admin/*', (req, res) => {
   res.sendFile(requestedPath);
 });
 
-// Socket.io connection
-io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
-  
-  socket.on('joinRoom', (userId) => {
-    socket.join(userId);
-    console.log(`User ${userId} joined room`);
-  });
-  
-  socket.on('joinAdminRoom', () => {
-    socket.join('admin');
-    console.log(`Admin joined admin room`);
-  });
-  
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
-});
-
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -110,10 +92,51 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-const PORT = process.env.PORT || 3000;
-
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-
-module.exports = { app, io, server };
+// Handle Socket.IO for non-Vercel environments only
+// Vercel serverless functions don't support long-running connections like Socket.IO
+let io;
+if (!isVercel) {
+  const server = http.createServer(app);
+  io = new Server(server, {
+    cors: {
+      origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL || 'https://yourdomain.com' : "*", // Replace with your actual domain
+      methods: ["GET", "POST"]
+    }
+  });
+  
+  // Store io instance in app locals so routes can access it
+  app.set('io', io);
+  
+  // Socket.io connection
+  io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+    
+    socket.on('joinRoom', (userId) => {
+      socket.join(userId);
+      console.log(`User ${userId} joined room`);
+    });
+    
+    socket.on('joinAdminRoom', () => {
+      socket.join('admin');
+      console.log(`Admin joined admin room`);
+    });
+    
+    socket.on('disconnect', () => {
+      console.log('User disconnected:', socket.id);
+    });
+  });
+  
+  const PORT = process.env.PORT || 3000;
+  
+  server.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+  
+  module.exports = { app, io, server };
+} else {
+  // For Vercel, we export the app for the serverless function
+  // Note: Socket.IO is not available in serverless environments
+  // But we still make the app available for routes to potentially use
+  app.set('io', null);
+  module.exports = app;
+}
