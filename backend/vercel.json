@@ -19,11 +19,11 @@
     },
     {
       "src": "/admin/(.*)",
-      "dest": "api/index.js"
+      "dest": "/$1"
     },
     {
       "src": "/admin",
-      "dest": "api/index.js"
+      "dest": "/index.html"
     },
     {
       "src": "/(.*)",

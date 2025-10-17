@@ -53,7 +53,14 @@ app.get('/api/health', (req, res) => {
 
 // Serve admin panel index.html for root admin route
 app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../admin/index.html'));
+  // In Vercel, static files should be served from the public directory
+  if (isVercel) {
+    // For Vercel, static files are automatically served from the public directory
+    // So we redirect to the static file
+    res.redirect('/index.html');
+  } else {
+    res.sendFile(path.join(__dirname, '../../admin/index.html'));
+  }
 });
 
 // Redirect /api/admin to /admin (for any incorrect URL patterns)
@@ -70,15 +77,21 @@ app.get('/admin/*', (req, res) => {
     return res.status(400).json({ error: 'Invalid file path' });
   }
   
-  // Ensure the file path is within the admin directory
-  const resolvedPath = path.resolve(path.join(__dirname, '../../admin'));
-  const requestedPath = path.resolve(path.join(__dirname, '../../admin', filePath));
-  
-  if (!requestedPath.startsWith(resolvedPath)) {
-    return res.status(400).json({ error: 'Invalid file path' });
+  if (isVercel) {
+    // For Vercel, static files are automatically served from the public directory
+    // So we redirect to the static file
+    res.redirect(`/${filePath}`);
+  } else {
+    // Ensure the file path is within the admin directory
+    const resolvedPath = path.resolve(path.join(__dirname, '../../admin'));
+    const requestedPath = path.resolve(path.join(__dirname, '../../admin', filePath));
+    
+    if (!requestedPath.startsWith(resolvedPath)) {
+      return res.status(400).json({ error: 'Invalid file path' });
+    }
+    
+    res.sendFile(requestedPath);
   }
-  
-  res.sendFile(requestedPath);
 });
 
 // Error handling middleware
