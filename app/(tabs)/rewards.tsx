@@ -5,7 +5,7 @@ import Colors from '@/constants/Colors';
 import { useUser } from '@/contexts/UserContext';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const RewardsScreen = () => {
@@ -17,7 +17,7 @@ const RewardsScreen = () => {
   const [paymentMethod, setPaymentMethod] = useState('paypal');
   const [error, setError] = useState('');
 
-  const handleWithdraw = () => {
+  const handleWithdraw = useCallback(() => {
     const amount = parseInt(withdrawalAmount);
     
     if (!amount || amount <= 0) {
@@ -34,16 +34,26 @@ const RewardsScreen = () => {
     alert(`Withdrawal request for ₹${amount / 100} submitted successfully!`);
     setWithdrawalAmount('');
     setError('');
-  };
+  }, [withdrawalAmount, user]);
 
-  const rewardTiers = [
+  const rewardTiers = useMemo(() => [
     { credits: 100, reward: '₹10 Cashback', description: 'For your first verification' },
     { credits: 500, reward: '₹50 Cashback', description: 'After 5 verifications' },
     { credits: 1000, reward: '₹150 Cashback + Gift', description: 'Milestone achievement' },
     { credits: 2500, reward: '₹500 Cashback + Gift', description: 'Top contributor' },
-  ];
+  ], []);
 
-  const currentProgress = user ? Math.min((user.totalCredits / 2500) * 100, 100) : 0;
+  const currentProgress = useMemo(() => {
+    return user ? Math.min((user.totalCredits / 2500) * 100, 100) : 0;
+  }, [user]);
+
+  // Memoize balance values
+  const balanceValues = useMemo(() => {
+    return {
+      totalCredits: user?.totalCredits || 0,
+      withdrawable: user ? (user.withdrawableCredits / 100).toFixed(2) : '0.00'
+    };
+  }, [user]);
 
   return (
     <ProtectedRoute>
@@ -64,10 +74,10 @@ const RewardsScreen = () => {
               </TouchableOpacity>
             </View>
             <Text style={[styles.balanceAmount, { color: colors.text }]}>
-              {user?.totalCredits || 0} <Text style={styles.balanceCurrency}>points</Text>
+              {balanceValues.totalCredits} <Text style={styles.balanceCurrency}>points</Text>
             </Text>
             <Text style={[styles.balanceValue, { color: colors.gray }]}>
-              ≈ ₹{user ? (user.withdrawableCredits / 100).toFixed(2) : '0.00'}
+              ≈ ₹{balanceValues.withdrawable}
             </Text>
           </View>
 

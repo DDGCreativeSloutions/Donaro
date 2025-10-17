@@ -56,33 +56,41 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password, isAdmin } = req.body;
 
-    // Check for predefined admin credentials
-    if (email === 'admin@donaro.com' && password === 'admin123') {
-      // Generate token for admin user
-      const token = generateToken('admin-user-id'); // In a real app, you would use a proper admin ID
-
-      res.json({
-        id: 'admin-user-id',
-        name: 'Admin User',
-        email: 'admin@donaro.com',
-        phone: '9876543210',
-        totalCredits: 0,
-        lifetimeCredits: 0,
-        withdrawableCredits: 0,
-        totalDonations: 0,
-        isAdmin: true,
-        token,
-      });
-      return;
-    }
-
     // Check if user exists
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { email },
     });
 
+    // If user not found, allow a development fallback for an admin user.
+    // This will create the admin user on first login when running in dev.
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      // Only allow automatic creation in non-production environments
+      const devAdminEmail = process.env.ADMIN_EMAIL || 'admin@donaro.com';
+      const devAdminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+
+      if (email === devAdminEmail && password === devAdminPassword) {
+        try {
+          const hashedPassword = await hashPassword(password);
+          user = await prisma.user.create({
+            data: {
+              name: 'Admin User',
+              email,
+              phone: '0000000000',
+              password: hashedPassword,
+            },
+          });
+          console.log('Development admin user created:', email);
+        } catch (createErr) {
+          console.error('Error creating dev admin user:', createErr);
+          return res.status(500).json({ error: 'Server error during admin setup' });
+        }
+      } else {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
     }
 
     // Check password
@@ -95,8 +103,9 @@ router.post('/login', async (req, res) => {
     // Generate token
     const token = generateToken(user.id);
 
-    // Check if user is admin (for demo purposes, we'll use a specific email)
-    const isAdminUser = email === 'admin@donaro.com' || email === 'admin@donaro.com';
+    // Check if user is admin (based on email domain or specific admin email)
+    // In a production environment, you would use a more robust method
+    const isAdminUser = email.endsWith('@yourdomain.com') || email === 'admin@donaro.com';
 
     res.json({
       id: user.id,

@@ -8,7 +8,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const ProfileScreen = () => {
@@ -34,7 +34,7 @@ const ProfileScreen = () => {
     loadUserData();
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await AsyncStorage.removeItem('user');
       logout();
@@ -44,15 +44,15 @@ const ProfileScreen = () => {
       // Even if there's an error, still redirect to login
       router.replace('/login');
     }
-  };
+  }, [logout, router]);
 
-  const profileOptions = [
+  const profileOptions = useMemo(() => [
     { icon: 'user', title: 'Personal Information', action: () => setActiveModal('personal-info') },
     { icon: 'help-circle', title: 'Help & Support', action: () => setActiveModal('help') },
     { icon: 'info', title: 'About Donaro', action: () => setActiveModal('about') },
-  ];
+  ], []);
 
-  const renderModalContent = () => {
+  const renderModalContent = useCallback(() => {
     switch (activeModal) {
       case 'help':
         return <HelpComponent />;
@@ -63,7 +63,16 @@ const ProfileScreen = () => {
       default:
         return null;
     }
-  };
+  }, [activeModal]);
+
+  // Memoize stats calculation
+  const stats = useMemo(() => {
+    return {
+      verifications: user?.totalDonations || 0,
+      points: user?.totalCredits || 0,
+      rewards: user ? Math.floor(user.withdrawableCredits / 100) : 0
+    };
+  }, [user]);
 
   if (loading) {
     return (
@@ -107,15 +116,15 @@ const ProfileScreen = () => {
           {/* Stats */}
           <View style={styles.statsContainer}>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.statValue, { color: colors.text }]}>{user?.totalDonations || 0}</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{stats.verifications}</Text>
               <Text style={[styles.statLabel, { color: colors.gray }]}>Verifications</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.statValue, { color: colors.text }]}>{user?.totalCredits || 0}</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{stats.points}</Text>
               <Text style={[styles.statLabel, { color: colors.gray }]}>Points</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.statValue, { color: colors.text }]}>₹{user ? Math.floor(user.withdrawableCredits / 100) : 0}</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>₹{stats.rewards}</Text>
               <Text style={[styles.statLabel, { color: colors.gray }]}>Rewards</Text>
             </View>
           </View>

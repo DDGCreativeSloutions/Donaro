@@ -10,6 +10,22 @@ import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'reac
 // Get API base URL from environment
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
 
+// Validate URL to prevent SSRF
+const isValidUrl = (url: string): boolean => {
+  try {
+    const parsedUrl = new URL(url);
+    // Only allow localhost or specific trusted domains
+    return parsedUrl.hostname === 'localhost' || parsedUrl.hostname === '127.0.0.1' || parsedUrl.hostname === 'yourdomain.com'; // Replace with your actual domain
+  } catch {
+    return false;
+  }
+};
+
+// Ensure API_BASE_URL is valid
+if (!isValidUrl(API_BASE_URL)) {
+  console.error('Invalid API base URL detected');
+}
+
 const OTPVerificationScreen = () => {
   const router = useRouter();
   const colorScheme = useColorScheme();
@@ -80,6 +96,12 @@ const OTPVerificationScreen = () => {
       return;
     }
     
+    // Validate API URL before making requests
+    if (!isValidUrl(API_BASE_URL)) {
+      Alert.alert('Error', 'Invalid API configuration. Please contact support.');
+      return;
+    }
+    
     setIsLoading(true);
     try {
       // Verify OTP with backend
@@ -119,7 +141,14 @@ const OTPVerificationScreen = () => {
       }
     } catch (error: any) {
       console.error('OTP verification error:', error);
-      Alert.alert('Error', error.message || 'Failed to verify OTP. Please try again.');
+      // Provide more specific error messages
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        Alert.alert('Network Error', 'Network connection failed. Please check your internet and try again.');
+      } else if (error.message && error.message.includes('timeout')) {
+        Alert.alert('Timeout Error', 'Request timeout. The server is taking too long to respond. Please try again.');
+      } else {
+        Alert.alert('Error', error.message || 'Failed to verify OTP. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -127,6 +156,12 @@ const OTPVerificationScreen = () => {
 
   const handleResendOTP = async () => {
     if (timer > 0) return;
+    
+    // Validate API URL before making requests
+    if (!isValidUrl(API_BASE_URL)) {
+      Alert.alert('Error', 'Invalid API configuration. Please contact support.');
+      return;
+    }
     
     try {
       // Request new OTP
@@ -148,7 +183,14 @@ const OTPVerificationScreen = () => {
       }
     } catch (error: any) {
       console.error('Resend OTP error:', error);
-      Alert.alert('Error', error.message || 'Failed to resend OTP. Please try again.');
+      // Provide more specific error messages
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        Alert.alert('Network Error', 'Network connection failed. Please check your internet and try again.');
+      } else if (error.message && error.message.includes('timeout')) {
+        Alert.alert('Timeout Error', 'Request timeout. The server is taking too long to respond. Please try again.');
+      } else {
+        Alert.alert('Error', error.message || 'Failed to resend OTP. Please try again.');
+      }
     }
   };
 

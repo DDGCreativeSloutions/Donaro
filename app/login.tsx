@@ -7,7 +7,7 @@ import { apiService } from '@/services/api';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const LoginScreen = () => {
@@ -21,7 +21,7 @@ const LoginScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
-  const handleLogin = async () => {
+  const handleLogin = useCallback(async () => {
     // Clear previous errors
     setLoginError('');
     
@@ -61,13 +61,15 @@ const LoginScreen = () => {
         setLoginError('Invalid email or password. Please try again.');
       } else if (error.message && error.message.includes('Network')) {
         setLoginError('Network connection failed. Please check your internet and try again.');
+      } else if (error.message && error.message.includes('timeout')) {
+        setLoginError('Request timeout. The server is taking too long to respond. Please try again.');
       } else {
         setLoginError(error.message || 'Login failed. Please try again.');
       }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [email, password, login, router]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

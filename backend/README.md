@@ -24,7 +24,7 @@ POST /api/auth/register
   "name": "John Doe",
   "email": "john@example.com",
   "phone": "+1234567890",
-  "password": "password123"
+  "password": "securePassword123!" // Example password - use a strong, unique password in production
 }
 ```
 
@@ -52,7 +52,7 @@ POST /api/auth/login
 ```json
 {
   "email": "john@example.com",
-  "password": "password123"
+  "password": "securePassword123!" // Example password - use a strong, unique password in production
 }
 ```
 
@@ -660,4 +660,3 @@ socket.on('donationCreated', (donation) => {
 socket.on('donationStatusUpdated', (donation) => {
   console.log('Donation status updated:', donation);
 });
-```

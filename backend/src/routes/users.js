@@ -1,24 +1,36 @@
 const express = require('express');
 const prisma = require('../utils/db');
+const { authenticateToken, authorizeAdmin } = require('../utils/authMiddleware');
 
 const router = express.Router();
+
+// Apply authentication middleware to all routes
+router.use(authenticateToken);
+
+// Get all users (admin only)
+router.get('/', authorizeAdmin, async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json(users);
+  } catch (error) {
+    console.error('Get all users error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 // Get user by ID
 router.get('/:id', async (req, res) => {
   try {
-    // Handle special case for admin user
-    if (req.params.id === 'admin-user-id') {
-      return res.json({
-        id: 'admin-user-id',
-        name: 'Admin User',
-        email: 'admin@donaro.com',
-        phone: '9876543210',
-        totalCredits: 0,
-        lifetimeCredits: 0,
-        withdrawableCredits: 0,
-        totalDonations: 0,
-      });
+    // Users can only access their own data (unless admin)
+    const isAdmin = req.user.email.endsWith('@yourdomain.com') || req.user.email === 'admin@donaro.com';
+    if (req.params.id !== req.user.id && !isAdmin) {
+      return res.status(403).json({ error: 'Access denied' });
     }
+    
+    // Remove special case for admin user - not needed anymore
 
     const user = await prisma.user.findUnique({
       where: { id: req.params.id },
@@ -47,6 +59,11 @@ router.get('/:id', async (req, res) => {
 // Update user
 router.put('/:id', async (req, res) => {
   try {
+    // Users can only update their own data
+    if (req.params.id !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
     const { name, email, phone } = req.body;
 
     const user = await prisma.user.update({
@@ -71,6 +88,41 @@ router.put('/:id', async (req, res) => {
   } catch (error) {
     console.error('Update user error:', error);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Delete user (admin only)
+router.delete('/:id', authorizeAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // Prevent admin from deleting themselves
+    if (userId === req.user.id) {
+      return res.status(400).json({ error: 'You cannot delete your own account' });
+    }
+    
+    // Check if user exists
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Delete user (this will also delete related donations and withdrawals due to foreign key constraints)
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    if (error.code === 'P2025') {
+      res.status(404).json({ error: 'User not found' });
+    } else {
+      res.status(500).json({ error: 'Server error during user deletion' });
+    }
   }
 });
 

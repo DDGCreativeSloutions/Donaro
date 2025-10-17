@@ -2,6 +2,7 @@ const express = require('express');
 const prisma = require('../utils/db');
 const nodemailer = require('nodemailer');
 const rateLimit = require('express-rate-limit');
+const { authenticateToken } = require('../utils/authMiddleware');
 
 const router = express.Router();
 

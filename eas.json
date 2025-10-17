@@ -1,0 +1,37 @@
+{
+  "cli": {
+    "version": ">= 16.23.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {},
+      "cache": {
+        "disabled": false,
+        "key": "preview-$(git rev-parse HEAD)"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {},
+      "cache": {
+        "disabled": false,
+        "key": "production-$(git rev-parse HEAD)"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

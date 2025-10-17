@@ -93,66 +93,91 @@ const DonationForm = () => {
         locationStatus.status === 'granted' && 
         mediaLibraryStatus.status === 'granted'
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Permission check error:', error);
+      Alert.alert(
+        'Permission Error',
+        `Failed to check permissions: ${error.message || 'Unknown error'}. Please try again.`,
+        [{ text: 'OK' }]
+      );
       return false;
     }
   };
 
   const handlePhotoUpload = async (type: 'donation' | 'selfie') => {
-    const hasPermissions = await checkPermissions();
-    
-    if (!hasPermissions) {
-      Alert.alert(
-        'Permissions Required',
-        'This app needs camera, location, and media library permissions to capture photos. Please enable them in your device settings.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Open Settings', 
-            onPress: () => {
-              // In a real app, you would open the settings here
-              // For now, we'll just proceed and let the Camera component handle it
+    try {
+      const hasPermissions = await checkPermissions();
+      
+      if (!hasPermissions) {
+        Alert.alert(
+          'Permissions Required',
+          'This app needs camera, location, and media library permissions to capture photos. Please enable them in your device settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Open Settings', 
+              onPress: () => {
+                // In a real app, you would open the settings here
+                // For now, we'll just proceed and let the Camera component handle it
+              }
             }
-          }
-        ]
+          ]
+        );
+        return;
+      }
+      
+      setPhotoTypeToCapture(type);
+      setIsCameraOpen(true);
+    } catch (error: any) {
+      console.error('Error handling photo upload:', error);
+      Alert.alert(
+        'Upload Error',
+        `Failed to prepare for photo capture: ${error.message || 'Unknown error'}. Please try again.`,
+        [{ text: 'OK' }]
       );
     }
-    
-    setPhotoTypeToCapture(type);
-    setIsCameraOpen(true);
   };
 
   const onCameraCapture = (data: PhotoData) => {
-    // Validate location data
-    if (!data.location) {
-      Alert.alert(
-        'Location Warning',
-        'Could not get your precise location. The donation can still be submitted, but verification might take longer.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Continue Anyway', 
-            onPress: () => {
-              if (photoTypeToCapture === 'donation') {
-                setDonationPhoto(data);
-              } else {
-                setSelfiePhoto(data);
+    try {
+      // Validate location data
+      if (!data.location) {
+        Alert.alert(
+          'Location Warning',
+          'Could not get your precise location. The donation can still be submitted, but verification might take longer.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Continue Anyway', 
+              onPress: () => {
+                if (photoTypeToCapture === 'donation') {
+                  setDonationPhoto(data);
+                } else {
+                  setSelfiePhoto(data);
+                }
+                setIsCameraOpen(false);
               }
-              setIsCameraOpen(false);
             }
-          }
-        ]
-      );
-      return;
-    }
+          ]
+        );
+        return;
+      }
 
-    if (photoTypeToCapture === 'donation') {
-      setDonationPhoto(data);
-    } else {
-      setSelfiePhoto(data);
+      if (photoTypeToCapture === 'donation') {
+        setDonationPhoto(data);
+      } else {
+        setSelfiePhoto(data);
+      }
+      setIsCameraOpen(false);
+    } catch (error: any) {
+      console.error('Error handling camera capture:', error);
+      Alert.alert(
+        'Capture Error',
+        `Failed to process captured photo: ${error.message || 'Unknown error'}. Please try again.`,
+        [{ text: 'OK' }]
+      );
+      setIsCameraOpen(false);
     }
-    setIsCameraOpen(false);
   };
 
   const onSubmit = (data: FormData) => {
@@ -354,9 +379,22 @@ const proceedWithSubmission = async () => {
   } catch (error: any) {
     console.error('Error processing donation:', error);
     setIsProcessing(false); // Reset processing state on error
+    
+    // Provide more specific error messages
+    let errorMessage = 'Please try again.';
+    if (error.message) {
+      if (error.message.includes('Network')) {
+        errorMessage = 'Network connection failed. Please check your internet and try again.';
+      } else if (error.message.includes('timeout')) {
+        errorMessage = 'Request timeout. The server is taking too long to respond. Please try again.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     Alert.alert(
       'Submission Error',
-      `There was an error processing your donation: ${error.message || error.toString() || 'Please try again.'}`,
+      `There was an error processing your donation: ${errorMessage}`,
       [{ text: 'OK' }]
     );
   }

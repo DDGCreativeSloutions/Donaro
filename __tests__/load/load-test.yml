@@ -1,0 +1,202 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm-up"
+    # Ramp-up phase
+    - duration: 120
+      arrivalRate: 10
+      rampTo: 50
+      name: "Ramp-up load"
+    # Sustained load phase
+    - duration: 300
+      arrivalRate: 50
+      name: "Sustained load"
+    # Peak load phase
+    - duration: 120
+      arrivalRate: 100
+      name: "Peak load"
+    # Stress test phase
+    - duration: 60
+      arrivalRate: 200
+      name: "Stress test"
+  payload:
+    path: "./test-data.csv"
+    fields:
+      - "email"
+      - "password"
+      - "name"
+      - "phone"
+  variables:
+    donationTypes: ["food", "clothes", "books", "blood", "other"]
+    locations: ["New York", "Los Angeles", "Chicago", "Houston", "Phoenix"]
+    
+scenarios:
+  - name: "User Registration and Login Flow"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/register"
+          json:
+            name: "{{ name }}"
+            email: "{{ email }}"
+            phone: "{{ phone }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+            - json: "$.user.id"
+              as: "userId"
+          expect:
+            - statusCode: 201
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "loginToken"
+          expect:
+            - statusCode: 200
+
+  - name: "Donation Creation Flow"
+    weight: 40
+    flow:
+      # First login to get token
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@example.com"
+            password: "password123"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+            - json: "$.user.id"
+              as: "userId"
+      # Create donation
+      - post:
+          url: "/api/donations"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            type: "{{ $randomPick(donationTypes) }}"
+            title: "Load Test Donation {{ $randomString() }}"
+            description: "This is a load test donation"
+            quantity: "{{ $randomInt(1, 100) }} items"
+            receiver: "Test Receiver {{ $randomString() }}"
+            date: "2024-01-{{ $randomInt(10, 28) }}"
+            time: "{{ $randomInt(9, 17) }}:{{ $randomInt(0, 59) }}"
+            location: "{{ $randomPick(locations) }}"
+            donationPhoto: "test-photo-{{ $randomString() }}.jpg"
+            selfiePhoto: "test-selfie-{{ $randomString() }}.jpg"
+          expect:
+            - statusCode: 201
+      # Fetch user donations
+      - get:
+          url: "/api/donations/user/{{ userId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+  - name: "Admin Operations Flow"
+    weight: 20
+    flow:
+      # Admin login
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "admin@donaro.com"
+            password: "admin123"
+            isAdmin: true
+          capture:
+            - json: "$.token"
+              as: "adminToken"
+      # Fetch pending donations
+      - get:
+          url: "/api/donations/status/pending"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          expect:
+            - statusCode: 200
+      # Fetch all donations
+      - get:
+          url: "/api/donations"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          expect:
+            - statusCode: 200
+      # Fetch pending withdrawals
+      - get:
+          url: "/api/withdrawals/status/pending"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          expect:
+            - statusCode: 200
+
+  - name: "User Dashboard Flow"
+    weight: 10
+    flow:
+      # Login
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "test@example.com"
+            password: "password123"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+            - json: "$.user.id"
+              as: "userId"
+      # Fetch user profile
+      - get:
+          url: "/api/users/{{ userId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+      # Fetch user donations
+      - get:
+          url: "/api/donations/user/{{ userId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+      # Fetch user withdrawals
+      - get:
+          url: "/api/withdrawals/user/{{ userId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+# Performance thresholds
+expect:
+  thresholds:
+    - http.response_time.p95: 2000  # 95% of requests should complete within 2 seconds
+    - http.response_time.p99: 5000  # 99% of requests should complete within 5 seconds
+    - http.request_rate: 50         # Should handle at least 50 requests per second
+    - http.codes.200: 0.95          # 95% success rate
+    - http.codes.201: 0.95          # 95% success rate for creation endpoints
+
+# Metrics to collect
+metrics:
+  - name: "response_time_95th"
+    unit: "ms"
+  - name: "response_time_99th"
+    unit: "ms"
+  - name: "requests_per_second"
+    unit: "rps"
+  - name: "error_rate"
+    unit: "%"
+
+# Plugins for enhanced reporting
+plugins:
+  - name: "artillery-plugin-metrics-by-endpoint"
+  - name: "artillery-plugin-cloudwatch"
+    config:
+      region: "us-east-1"
+      namespace: "Donaro/LoadTest"

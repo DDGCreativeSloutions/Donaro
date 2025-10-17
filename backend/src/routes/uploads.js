@@ -1,8 +1,12 @@
 const express = require('express');
 const path = require('path');
 const { upload, processImage, processDonationPhoto } = require('../utils/imageUpload');
+const { authenticateToken } = require('../utils/authMiddleware');
 
 const router = express.Router();
+
+// Apply authentication middleware to all routes
+router.use(authenticateToken);
 
 // Upload donation photo
 router.post('/donation-photo', upload.single('donationPhoto'), async (req, res) => {
@@ -12,7 +16,7 @@ router.post('/donation-photo', upload.single('donationPhoto'), async (req, res) 
     }
 
     // Process the uploaded image
-    const processedImagePath = await processDonationPhoto(req.file.path, req.body.userId);
+    const processedImagePath = await processDonationPhoto(req.file.path, req.user.id);
     
     // Return the path to the processed image
     const imagePath = `/uploads/${path.basename(processedImagePath)}`;

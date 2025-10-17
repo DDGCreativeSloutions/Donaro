@@ -5,9 +5,12 @@ import { useUser } from '@/contexts/UserContext';
 import { apiService, Donation } from '@/services/api';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+/**
+ * Dashboard screen that displays user's overview and recent activity
+ */
 const DashboardScreen = () => {
   const router = useRouter();
   const colorScheme = useColorScheme();
@@ -16,10 +19,16 @@ const DashboardScreen = () => {
   const [donations, setDonations] = useState<Donation[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
+  /**
+   * Load donations when user changes
+   */
   useEffect(() => {
     loadDonations();
   }, [user]);
 
+  /**
+   * Load user's recent donations from the API
+   */
   const loadDonations = async () => {
     if (user) {
       try {
@@ -31,14 +40,20 @@ const DashboardScreen = () => {
     }
   };
 
-  const onRefresh = async () => {
+  /**
+   * Handle pull-to-refresh
+   */
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await refreshUser();
     await loadDonations();
     setRefreshing(false);
-  };
+  }, [refreshUser]);
 
-  const renderStatCard = (title: string, value: string | number, icon: string, color: string) => (
+  /**
+   * Render a stat card component
+   */
+  const renderStatCard = useCallback((title: string, value: string | number, icon: string, color: string) => (
     <TouchableOpacity 
       style={[styles.statCard, { backgroundColor: colors.card }]}
       onPress={() => router.push('/(tabs)/rewards')}
@@ -51,9 +66,12 @@ const DashboardScreen = () => {
         <Text style={[styles.statTitle, { color: colors.gray }]}>{title}</Text>
       </View>
     </TouchableOpacity>
-  );
+  ), [colors, router]);
 
-  const renderDonationItem = (donation: Donation) => (
+  /**
+   * Render a donation item component
+   */
+  const renderDonationItem = useCallback((donation: Donation) => (
     <View key={donation.id} style={[styles.donationItem, { backgroundColor: colors.card }]}>
       <View style={styles.donationIconContainer}>
         <Feather 
@@ -89,7 +107,18 @@ const DashboardScreen = () => {
         </Text>
       </View>
     </View>
-  );
+  ), [colors]);
+
+  /**
+   * Calculate user stats
+   */
+  const stats = useMemo(() => {
+    return {
+      totalCredits: user?.totalCredits || 0,
+      totalDonations: user?.totalDonations || 0,
+      withdrawable: user ? Math.floor(user.withdrawableCredits / 100) : 0
+    };
+  }, [user]);
 
   return (
     <ProtectedRoute>
@@ -118,9 +147,9 @@ const DashboardScreen = () => {
 
           {/* Stats */}
           <View style={styles.statsContainer}>
-            {renderStatCard('Total Points', user?.totalCredits || 0, 'award', colors.primary)}
-            {renderStatCard('Verifications', user?.totalDonations || 0, 'check-circle', colors.secondary)}
-            {renderStatCard('Rewards', '₹' + (user ? Math.floor(user.withdrawableCredits / 100) : 0), 'rupee', colors.accent)}
+            {renderStatCard('Total Points', stats.totalCredits, 'award', colors.primary)}
+            {renderStatCard('Verifications', stats.totalDonations, 'check-circle', colors.secondary)}
+            {renderStatCard('Rewards', '₹' + stats.withdrawable, 'rupee', colors.accent)}
           </View>
 
           {/* Quick Actions */}
@@ -144,8 +173,8 @@ const DashboardScreen = () => {
                 onPress={() => router.push('/(tabs)/rewards')}
               >
                 <View style={[styles.actionIconContainer, { backgroundColor: `${colors.secondary}20` }]}>
-  <Text style={{ fontSize: 24, color: colors.secondary }}>₹</Text>
-</View>
+                  <Text style={{ fontSize: 24, color: colors.secondary }}>₹</Text>
+                </View>
                 <Text style={[styles.actionText, { color: colors.text }]}>Withdraw Points</Text>
               </TouchableOpacity>
             </View>
@@ -362,9 +391,9 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     marginTop: 20,
-    marginBottom: 5,
+    marginBottom: 10,
   },
   emptyStateSubtext: {
     fontSize: 14,
@@ -372,13 +401,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptyStateButton: {
-    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 16,
   },
   emptyStateButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
 

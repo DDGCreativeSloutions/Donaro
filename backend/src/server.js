@@ -13,13 +13,16 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL || 'https://yourdomain.com' : "*", // Replace with your actual domain
     methods: ["GET", "POST"]
   }
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL || 'https://yourdomain.com' : "*", // Replace with your actual domain
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -31,6 +34,7 @@ const userRoutes = require('./routes/users');
 const withdrawalRoutes = require('./routes/withdrawals');
 const uploadRoutes = require('./routes/uploads');
 const otpRoutes = require('./routes/otp');
+const settingsRoutes = require('./routes/settings');
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -39,6 +43,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/withdrawals', withdrawalRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/otp', otpRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -58,7 +63,21 @@ app.get('/api/admin', (req, res) => {
 // Serve admin panel files (needed for files like donation-details.html)
 app.get('/admin/*', (req, res) => {
   const filePath = req.params[0];
-  res.sendFile(path.join(__dirname, '../../admin', filePath));
+  
+  // Prevent path traversal attacks by validating the file path
+  if (filePath.includes('..') || filePath.startsWith('/')) {
+    return res.status(400).json({ error: 'Invalid file path' });
+  }
+  
+  // Ensure the file path is within the admin directory
+  const resolvedPath = path.resolve(path.join(__dirname, '../../admin'));
+  const requestedPath = path.resolve(path.join(__dirname, '../../admin', filePath));
+  
+  if (!requestedPath.startsWith(resolvedPath)) {
+    return res.status(400).json({ error: 'Invalid file path' });
+  }
+  
+  res.sendFile(requestedPath);
 });
 
 // Socket.io connection

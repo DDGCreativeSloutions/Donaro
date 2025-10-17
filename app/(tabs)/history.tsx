@@ -5,9 +5,12 @@ import { useUser } from '@/contexts/UserContext';
 import { apiService, Donation } from '@/services/api';
 import { Feather } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+/**
+ * History screen that displays a user's donation verification history
+ */
 const HistoryScreen = () => {
   const router = useRouter();
   const { filter: initialFilter } = useLocalSearchParams(); // Get filter from URL params
@@ -18,47 +21,68 @@ const HistoryScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState('all'); // all, pending, approved, rejected
 
+  /**
+   * Set initial filter from URL params if provided
+   */
   useEffect(() => {
-    // Set initial filter from URL params if provided
     if (initialFilter && typeof initialFilter === 'string' && ['all', 'pending', 'approved', 'rejected'].includes(initialFilter)) {
       setFilter(initialFilter);
     }
   }, [initialFilter]);
 
+  /**
+   * Load donations when user or filter changes
+   */
   useEffect(() => {
     loadDonations();
   }, [user, filter]);
 
+  /**
+   * Load user's donations from the API
+   */
   const loadDonations = async () => {
     if (user) {
       try {
         const userDonations = await apiService.getDonations(user.id);
-        
-        // Apply filter
-        let filteredDonations = userDonations;
-        if (filter !== 'all') {
-          filteredDonations = userDonations.filter(donation => donation.status === filter);
-        }
-        
-        setDonations(filteredDonations);
+        setDonations(userDonations);
       } catch (error) {
         console.error('Error loading verifications:', error);
       }
     }
   };
 
+  /**
+   * Handle pull-to-refresh
+   */
   const onRefresh = async () => {
     setRefreshing(true);
     await loadDonations();
     setRefreshing(false);
   };
 
-  const getFilteredDonations = () => {
+  /**
+   * Filter donations based on selected filter
+   */
+  const filteredDonations = useMemo(() => {
     if (filter === 'all') return donations;
     return donations.filter(donation => donation.status === filter);
-  };
+  }, [donations, filter]);
 
-  const renderDonationItem = (donation: Donation) => (
+  /**
+   * Calculate statistics for display
+   */
+  const stats = useMemo(() => {
+    return {
+      total: donations.length,
+      approved: donations.filter(d => d.status === 'approved').length,
+      pending: donations.filter(d => d.status === 'pending').length
+    };
+  }, [donations]);
+
+  /**
+   * Render a single donation item
+   */
+  const renderDonationItem = useMemo(() => (donation: Donation) => (
     <View key={donation.id} style={[styles.donationItem, { backgroundColor: colors.card }]}>
       <View style={styles.donationHeader}>
         <View style={styles.donationIconContainer}>
@@ -133,7 +157,7 @@ const HistoryScreen = () => {
         </Text>
       </View>
     </View>
-  );
+  ), [colors]);
 
   return (
     <ProtectedRoute>
@@ -172,24 +196,24 @@ const HistoryScreen = () => {
           {/* Stats Summary */}
           <View style={styles.statsContainer}>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.statValue, { color: colors.text }]}>{donations.length}</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{stats.total}</Text>
               <Text style={[styles.statLabel, { color: colors.gray }]}>Total</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.statValue, { color: colors.success }]}>{donations.filter(d => d.status === 'approved').length}</Text>
+              <Text style={[styles.statValue, { color: colors.success }]}>{stats.approved}</Text>
               <Text style={[styles.statLabel, { color: colors.gray }]}>Approved</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
-              <Text style={[styles.statValue, { color: colors.primary }]}>{donations.filter(d => d.status === 'pending').length}</Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{stats.pending}</Text>
               <Text style={[styles.statLabel, { color: colors.gray }]}>Pending</Text>
             </View>
           </View>
           
           {/* Verifications List */}
           <View style={styles.section}>
-            {getFilteredDonations().length > 0 ? (
+            {filteredDonations.length > 0 ? (
               <View style={styles.donationsList}>
-                {getFilteredDonations().map(renderDonationItem)}
+                {filteredDonations.map(renderDonationItem)}
               </View>
             ) : (
               <View style={[styles.emptyState, { backgroundColor: colors.card }]}>
@@ -366,7 +390,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
-    marginBottom: 15,
+    marginBottom: 10,
   },
   statusText: {
     fontSize: 12,
@@ -388,9 +412,9 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     marginTop: 20,
-    marginBottom: 5,
+    marginBottom: 10,
   },
   emptyStateSubtext: {
     fontSize: 14,
@@ -398,13 +422,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptyStateButton: {
-    paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 16,
   },
   emptyStateButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
 

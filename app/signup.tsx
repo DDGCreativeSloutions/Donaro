@@ -6,10 +6,36 @@ import { useUser } from '@/contexts/UserContext';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 // Get API base URL from the api service
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+// Validate URL to prevent SSRF
+const isValidUrl = (url: string): boolean => {
+  try {
+    const parsedUrl = new URL(url);
+    // Only allow localhost or specific trusted domains
+    return parsedUrl.hostname === 'localhost' || parsedUrl.hostname === '127.0.0.1' || parsedUrl.hostname === 'yourdomain.com'; // Replace with your actual domain
+  } catch {
+    return false;
+  }
+};
+
+// Ensure API_BASE_URL is valid
+if (!isValidUrl(API_BASE_URL)) {
+  console.error('Invalid API base URL detected');
+}
 
 const SignupScreen = () => {
   const router = useRouter();
@@ -67,6 +93,12 @@ const SignupScreen = () => {
       return;
     }
     
+    // Validate API URL before making requests
+    if (!isValidUrl(API_BASE_URL)) {
+      Alert.alert('Error', 'Invalid API configuration. Please contact support.');
+      return;
+    }
+    
     setIsLoading(true);
     try {
       // Generate OTP
@@ -96,21 +128,37 @@ const SignupScreen = () => {
       }
     } catch (error: any) {
       console.error('Signup error:', error);
-      Alert.alert('Signup Failed', error.message || 'Signup failed. Please try again.');
+      // Provide more specific error messages
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        Alert.alert('Network Error', 'Network connection failed. Please check your internet and try again.');
+      } else if (error.message && error.message.includes('timeout')) {
+        Alert.alert('Timeout Error', 'Request timeout. The server is taking too long to respond. Please try again.');
+      } else {
+        Alert.alert('Signup Failed', error.message || 'Signup failed. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { backgroundColor: colors.primary }]}>
-        <Text style={styles.headerTitle}>Create Account</Text>
-        <Text style={styles.headerSubtitle}>Start making a difference today</Text>
-      </View>
-      
-      <View style={styles.content}>
-        <View style={[styles.card, { backgroundColor: colors.card }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[styles.header, { backgroundColor: colors.primary }]}>
+            <Text style={styles.headerTitle}>Create Account</Text>
+            <Text style={styles.headerSubtitle}>Start making a difference today</Text>
+          </View>
+
+          <View style={styles.content}>
+            <View style={[styles.card, { backgroundColor: colors.card }]}>
           <View style={styles.inputContainer}>
             <Input
               placeholder="Full Name"
@@ -179,28 +227,32 @@ const SignupScreen = () => {
             </Text>
           </View>
           
-          <Button 
-            title={isLoading ? "Creating Account..." : "Sign Up"} 
-            onPress={handleSignup} 
-            disabled={isLoading}
-            style={styles.signupButton}
-          />
+              <Button
+                title={isLoading ? 'Creating Account...' : 'Sign Up'}
+                onPress={handleSignup}
+                disabled={isLoading}
+                style={styles.signupButton}
+              />
         </View>
-        
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.gray }]}>Already have an account? </Text>
-          <TouchableOpacity onPress={() => router.push('/login')}>
-            <Text style={[styles.footerLink, { color: colors.primary }]}>Login</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
+            <View style={styles.footer}>
+              <Text style={[styles.footerText, { color: colors.gray }]}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => router.push('/login')}>
+                <Text style={[styles.footerLink, { color: colors.primary }]}>Login</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   header: {
     paddingHorizontal: 20,
@@ -224,6 +276,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: -30,
     marginHorizontal: 20,
+    paddingBottom: 30,
   },
   card: {
     borderRadius: 20,
@@ -263,6 +316,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 18,
     marginTop: 10,
+    width: '100%'
   },
   footer: {
     flexDirection: 'row',

@@ -78,7 +78,7 @@ http://localhost:3000/admin
 
 Use the following credentials to log in as admin:
 - Email: admin@donaro.com
-- Password: admin123
+- Password: [REDACTED] - Use the password set during installation or reset using the admin panel
 
 ## World-Class UI Features
 
@@ -177,9 +177,9 @@ EXPO_PUBLIC_API_URL=http://localhost:3000
 ```
 
 ### Backend (.env file in backend directory)
-```
+```env
 PORT=3000
-JWT_SECRET=your_jwt_secret_key
+JWT_SECRET=[REDACTED] # Generate a strong secret key
 DATABASE_URL=file:./dev.db
 ```
 

@@ -1,0 +1,260 @@
+config:
+  target: 'http://localhost:3000/api'
+  phases:
+    # Baseline phase
+    - duration: 30
+      arrivalRate: 1
+      name: "Baseline"
+    # Light load phase
+    - duration: 60
+      arrivalRate: 5
+      name: "Light load"
+    # Medium load phase
+    - duration: 120
+      arrivalRate: 20
+      name: "Medium load"
+    # Heavy load phase
+    - duration: 180
+      arrivalRate: 50
+      name: "Heavy load"
+    # Peak load phase
+    - duration: 120
+      arrivalRate: 100
+      name: "Peak load"
+    # Stress test phase
+    - duration: 60
+      arrivalRate: 200
+      name: "Stress test"
+    # Recovery phase
+    - duration: 60
+      arrivalRate: 10
+      name: "Recovery"
+
+scenarios:
+  - name: "Health Check"
+    weight: 5
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+
+  - name: "Authentication Load Test"
+    weight: 25
+    flow:
+      # Register new user
+      - post:
+          url: "/auth/register"
+          json:
+            name: "Load Test User {{ $randomString() }}"
+            email: "loadtest{{ $randomString() }}@example.com"
+            phone: "{{ $randomInt(1000000000, 9999999999) }}"
+            password: "password123"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+            - json: "$.user.id"
+              as: "userId"
+          expect:
+            - statusCode: 201
+      # Login with created user
+      - post:
+          url: "/auth/login"
+          json:
+            email: "{{ email }}"
+            password: "password123"
+          expect:
+            - statusCode: 200
+
+  - name: "Donation CRUD Operations"
+    weight: 40
+    flow:
+      # Login first
+      - post:
+          url: "/auth/login"
+          json:
+            email: "test@example.com"
+            password: "password123"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+            - json: "$.user.id"
+              as: "userId"
+      # Create donation
+      - post:
+          url: "/donations"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            type: "food"
+            title: "Load Test Donation {{ $randomString() }}"
+            description: "Automated load test donation"
+            quantity: "{{ $randomInt(1, 50) }} kg"
+            receiver: "Test Receiver"
+            date: "2024-01-15"
+            time: "10:00"
+            location: "Load Test Location"
+            donationPhoto: "test-photo.jpg"
+            selfiePhoto: "test-selfie.jpg"
+          capture:
+            - json: "$.id"
+              as: "donationId"
+          expect:
+            - statusCode: 201
+      # Fetch user donations
+      - get:
+          url: "/donations/user/{{ userId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+      # Fetch donation by status
+      - get:
+          url: "/donations/status/pending"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+  - name: "User Profile Operations"
+    weight: 15
+    flow:
+      # Login
+      - post:
+          url: "/auth/login"
+          json:
+            email: "test@example.com"
+            password: "password123"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+            - json: "$.user.id"
+              as: "userId"
+      # Get user profile
+      - get:
+          url: "/users/{{ userId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+      # Update user profile
+      - put:
+          url: "/users/{{ userId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            name: "Updated Load Test User"
+          expect:
+            - statusCode: 200
+
+  - name: "Withdrawal Operations"
+    weight: 10
+    flow:
+      # Login
+      - post:
+          url: "/auth/login"
+          json:
+            email: "test@example.com"
+            password: "password123"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+            - json: "$.user.id"
+              as: "userId"
+      # Create withdrawal
+      - post:
+          url: "/withdrawals"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            amount: 10
+            date: "2024-01-15"
+          expect:
+            - statusCode: [201, 400] # May fail if insufficient credits
+      # Fetch user withdrawals
+      - get:
+          url: "/withdrawals/user/{{ userId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+  - name: "Admin Operations"
+    weight: 5
+    flow:
+      # Admin login
+      - post:
+          url: "/auth/login"
+          json:
+            email: "admin@donaro.com"
+            password: "admin123"
+            isAdmin: true
+          capture:
+            - json: "$.token"
+              as: "adminToken"
+      # Fetch all donations
+      - get:
+          url: "/donations"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          expect:
+            - statusCode: 200
+      # Fetch pending donations
+      - get:
+          url: "/donations/status/pending"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          expect:
+            - statusCode: 200
+      # Fetch pending withdrawals
+      - get:
+          url: "/withdrawals/status/pending"
+          headers:
+            Authorization: "Bearer {{ adminToken }}"
+          expect:
+            - statusCode: 200
+
+# Database stress scenarios
+  - name: "Database Stress Test"
+    weight: 10
+    flow:
+      # Rapid-fire requests to stress database
+      - loop:
+          - get:
+              url: "/health"
+          - get:
+              url: "/donations/status/approved"
+          - get:
+              url: "/donations/status/rejected"
+        count: 10
+
+# Performance expectations
+expect:
+  thresholds:
+    # Response time thresholds
+    - http.response_time.p50: 500   # 50% of requests under 500ms
+    - http.response_time.p95: 2000  # 95% of requests under 2 seconds
+    - http.response_time.p99: 5000  # 99% of requests under 5 seconds
+    
+    # Success rate thresholds
+    - http.codes.200: 0.95          # 95% success rate for GET requests
+    - http.codes.201: 0.90          # 90% success rate for POST requests
+    - http.codes.400: 0.05          # Max 5% client errors
+    - http.codes.500: 0.01          # Max 1% server errors
+    
+    # Throughput thresholds
+    - http.request_rate: 30         # Should handle at least 30 RPS
+
+# Custom metrics
+metrics:
+  - name: "auth_response_time"
+    unit: "ms"
+  - name: "donation_creation_time"
+    unit: "ms"
+  - name: "database_query_time"
+    unit: "ms"
+
+# Error handling
+on:
+  error:
+    - log: "Error occurred: {{ error }}"

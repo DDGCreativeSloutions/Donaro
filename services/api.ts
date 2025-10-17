@@ -1,5 +1,22 @@
 // Real API service connecting to backend with Prisma
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+// Validate URL to prevent SSRF
+const isValidUrl = (url: string): boolean => {
+  try {
+    const parsedUrl = new URL(url);
+    // Only allow localhost or specific trusted domains
+    return parsedUrl.hostname === 'localhost' || parsedUrl.hostname === '127.0.0.1' || parsedUrl.hostname === 'yourdomain.com'; // Replace with your actual domain
+  } catch {
+    return false;
+  }
+};
+
+// Ensure API_BASE_URL is valid
+if (!isValidUrl(API_BASE_URL)) {
+  console.error('Invalid API base URL detected');
+}
+
 import { io, Socket } from 'socket.io-client';
 
 export interface User {
@@ -145,6 +162,11 @@ class ApiService {
   // User methods
   async getUser(id: string): Promise<User | null> {
     try {
+      // Validate API URL before making requests
+      if (!isValidUrl(API_BASE_URL)) {
+        throw new Error('Invalid API configuration');
+      }
+      
       const response = await fetch(`${API_BASE_URL}/users/${id}`, {
         headers: this.getHeaders(),
       });
@@ -162,6 +184,11 @@ class ApiService {
 
   async createUser(userData: UserRegistrationData): Promise<User> {
     try {
+      // Validate API URL before making requests
+      if (!isValidUrl(API_BASE_URL)) {
+        throw new Error('Invalid API configuration');
+      }
+      
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: this.getHeaders(),
@@ -188,6 +215,11 @@ class ApiService {
 
   async loginUser(email: string, password: string, isAdmin?: boolean): Promise<User> {
     try {
+      // Validate API URL before making requests
+      if (!isValidUrl(API_BASE_URL)) {
+        throw new Error('Invalid API configuration');
+      }
+      
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: this.getHeaders(),
@@ -214,6 +246,11 @@ class ApiService {
 
   async updateUser(userId: string, updates: Partial<User>): Promise<User | null> {
     try {
+      // Validate API URL before making requests
+      if (!isValidUrl(API_BASE_URL)) {
+        throw new Error('Invalid API configuration');
+      }
+      
       const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
         method: 'PUT',
         headers: this.getHeaders(),
@@ -234,6 +271,11 @@ class ApiService {
   // Donation methods
   async getDonations(userId: string): Promise<Donation[]> {
     try {
+      // Validate API URL before making requests
+      if (!isValidUrl(API_BASE_URL)) {
+        return [];
+      }
+      
       const response = await fetch(`${API_BASE_URL}/donations/user/${userId}`, {
         headers: this.getHeaders(),
       });
@@ -252,6 +294,11 @@ class ApiService {
   async createDonation(donationData: Omit<Donation, 'id' | 'createdAt' | 'updatedAt'>): Promise<Donation> {
     try {
       console.log('Sending donation data to API:', donationData);
+      
+      // Validate API URL before making requests
+      if (!isValidUrl(API_BASE_URL)) {
+        throw new Error('Invalid API configuration');
+      }
       
       // Create a timeout promise
       const timeoutPromise = new Promise((_, reject) => {
@@ -300,6 +347,11 @@ class ApiService {
 
   async getPendingDonations(): Promise<Donation[]> {
     try {
+      // Validate API URL before making requests
+      if (!isValidUrl(API_BASE_URL)) {
+        return [];
+      }
+      
       const response = await fetch(`${API_BASE_URL}/donations/status/pending`, {
         headers: this.getHeaders(),
       });
@@ -317,6 +369,11 @@ class ApiService {
 
   async getAllDonations(): Promise<Donation[]> {
     try {
+      // Validate API URL before making requests
+      if (!isValidUrl(API_BASE_URL)) {
+        return [];
+      }
+      
       const response = await fetch(`${API_BASE_URL}/donations`, {
         headers: this.getHeaders(),
       });
@@ -334,6 +391,11 @@ class ApiService {
 
   async updateDonationStatus(donationId: string, status: 'approved' | 'rejected'): Promise<Donation | null> {
     try {
+      // Validate API URL before making requests
+      if (!isValidUrl(API_BASE_URL)) {
+        throw new Error('Invalid API configuration');
+      }
+      
       const response = await fetch(`${API_BASE_URL}/donations/${donationId}/status`, {
         method: 'PUT',
         headers: this.getHeaders(),
@@ -354,6 +416,11 @@ class ApiService {
 
   async getApprovedDonations(): Promise<Donation[]> {
     try {
+      // Validate API URL before making requests
+      if (!isValidUrl(API_BASE_URL)) {
+        return [];
+      }
+      
       const response = await fetch(`${API_BASE_URL}/donations/status/approved`, {
         headers: this.getHeaders(),
       });
@@ -371,6 +438,11 @@ class ApiService {
 
   async getRejectedDonations(): Promise<Donation[]> {
     try {
+      // Validate API URL before making requests
+      if (!isValidUrl(API_BASE_URL)) {
+        return [];
+      }
+      
       const response = await fetch(`${API_BASE_URL}/donations/status/rejected`, {
         headers: this.getHeaders(),
       });
@@ -389,6 +461,11 @@ class ApiService {
   // Withdrawal methods
   async getWithdrawals(userId: string): Promise<Withdrawal[]> {
     try {
+      // Validate API URL before making requests
+      if (!isValidUrl(API_BASE_URL)) {
+        return [];
+      }
+      
       const response = await fetch(`${API_BASE_URL}/withdrawals/user/${userId}`, {
         headers: this.getHeaders(),
       });
@@ -406,6 +483,11 @@ class ApiService {
 
   async createWithdrawal(withdrawalData: Omit<Withdrawal, 'id' | 'createdAt' | 'updatedAt'>): Promise<Withdrawal> {
     try {
+      // Validate API URL before making requests
+      if (!isValidUrl(API_BASE_URL)) {
+        throw new Error('Invalid API configuration');
+      }
+      
       const response = await fetch(`${API_BASE_URL}/withdrawals`, {
         method: 'POST',
         headers: this.getHeaders(),
@@ -426,6 +508,11 @@ class ApiService {
 
   async getPendingWithdrawals(): Promise<Withdrawal[]> {
     try {
+      // Validate API URL before making requests
+      if (!isValidUrl(API_BASE_URL)) {
+        return [];
+      }
+      
       const response = await fetch(`${API_BASE_URL}/withdrawals/status/pending`, {
         headers: this.getHeaders(),
       });
@@ -443,6 +530,11 @@ class ApiService {
 
   async updateWithdrawalStatus(withdrawalId: string, status: 'processed' | 'rejected'): Promise<Withdrawal | null> {
     try {
+      // Validate API URL before making requests
+      if (!isValidUrl(API_BASE_URL)) {
+        throw new Error('Invalid API configuration');
+      }
+      
       const response = await fetch(`${API_BASE_URL}/withdrawals/${withdrawalId}/status`, {
         method: 'PUT',
         headers: this.getHeaders(),

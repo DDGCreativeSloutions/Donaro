@@ -11,7 +11,6 @@ import { useEffect, useState } from 'react';
 import { StatusBar, View } from 'react-native';
 import OnboardingScreen from './onboarding';
 
-
 export {
     // Catch any errors thrown by the Layout component.
     ErrorBoundary
@@ -25,6 +24,9 @@ export const unstable_settings = {
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
+/**
+ * Root layout component that handles font loading and initial app setup
+ */
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
@@ -49,11 +51,17 @@ export default function RootLayout() {
   return <RootLayoutNav />;
 }
 
+/**
+ * Navigation layout component that handles splash screen, onboarding, and routing
+ */
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
+  /**
+   * Initialize the app by checking onboarding status and showing splash screen
+   */
   useEffect(() => {
     const initializeApp = async () => {
       try {
@@ -78,6 +86,9 @@ function RootLayoutNav() {
     initializeApp();
   }, []);
 
+  /**
+   * Handle completion of onboarding flow
+   */
   const handleOnboardingComplete = async () => {
     try {
       await AsyncStorage.setItem('hasOnboarded', 'true');
@@ -87,6 +98,7 @@ function RootLayoutNav() {
     }
   };
 
+  // Show splash screen if still loading
   if (showSplash) {
     return (
       <View style={{ flex: 1 }}>
@@ -96,6 +108,7 @@ function RootLayoutNav() {
     );
   }
 
+  // Show onboarding if not completed
   if (showOnboarding) {
     return (
       <View style={{ flex: 1 }}>
@@ -105,6 +118,7 @@ function RootLayoutNav() {
     );
   }
 
+  // Main app navigation
   return (
     <UserProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

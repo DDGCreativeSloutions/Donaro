@@ -1,11 +1,20 @@
 const express = require('express');
 const prisma = require('../utils/db');
+const { authenticateToken, authorizeAdmin } = require('../utils/authMiddleware');
 
 const router = express.Router();
+
+// Apply authentication middleware to all routes
+router.use(authenticateToken);
 
 // Get all withdrawals for a user
 router.get('/user/:userId', async (req, res) => {
   try {
+    // Users can only access their own withdrawals
+    if (req.params.userId !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
     const withdrawals = await prisma.withdrawal.findMany({
       where: { userId: req.params.userId },
       orderBy: { createdAt: 'desc' },
@@ -22,6 +31,11 @@ router.get('/user/:userId', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { userId, amount, date } = req.body;
+    
+    // Users can only create withdrawals for themselves
+    if (userId !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
 
     // Check if user has enough credits
     const user = await prisma.user.findUnique({
@@ -74,7 +88,7 @@ router.post('/', async (req, res) => {
 });
 
 // Get pending withdrawals (for admin)
-router.get('/status/pending', async (req, res) => {
+router.get('/status/pending', authorizeAdmin, async (req, res) => {
   try {
     const withdrawals = await prisma.withdrawal.findMany({
       where: { status: 'pending' },
@@ -97,7 +111,7 @@ router.get('/status/pending', async (req, res) => {
 });
 
 // Update withdrawal status (for admin)
-router.put('/:id/status', async (req, res) => {
+router.put('/:id/status', authorizeAdmin, async (req, res) => {
   try {
     const { status } = req.body;
     const withdrawalId = req.params.id;
