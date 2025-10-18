@@ -15,13 +15,16 @@ const app = express();
 // Vercel will handle the server creation
 const isVercel = process.env.NOW_REGION || process.env.VERCEL;
 
-// Middleware - Simplified CORS for better compatibility
+// For Railway compatibility
+const isRailway = process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID;
+
+// Middleware - Production-ready CORS configuration
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
 
-    // Allow all localhost origins for development
+    // Allow localhost for development
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return callback(null, true);
     }
@@ -31,12 +34,12 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // Allow all HTTP origins for development
-    if (origin.startsWith('http://')) {
+    // Allow Railway deployment domain
+    if (origin.includes('.railway.app') || origin.includes('.up.railway.app')) {
       return callback(null, true);
     }
 
-    // Allow all HTTPS origins for development
+    // Allow all HTTPS origins for production
     if (origin.startsWith('https://')) {
       return callback(null, true);
     }
@@ -97,9 +100,16 @@ if (donationRoutes.setSSEBroadcast) {
   donationRoutes.setSSEBroadcast(broadcastSSE);
 }
 
-// Health check endpoint
+// Health check endpoint for Railway
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'Donations Backend is running' });
+  res.status(200).json({
+    status: 'OK',
+    message: 'Donations Backend is running',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    version: '1.0.0'
+  });
 });
 
 // Server-Sent Events endpoint for real-time updates (Vercel compatible)
@@ -154,22 +164,21 @@ function broadcastSSE(data) {
 
 // Serve admin panel index.html for root route
 app.get('/', (req, res) => {
-  // In Vercel, serve the public/index.html (status/admin page)
-  if (isVercel) {
+  // For Railway/Vercel, serve the public/index.html (status/admin page)
+  if (isRailway || isVercel) {
     // Serve the static index.html placed in `public/`
     return res.sendFile(path.join(__dirname, '../public/index.html'));
   } else {
-    // Local / non-Vercel: serve the admin app from the admin folder
+    // Local development: serve the admin app from the admin folder
     return res.sendFile(path.join(__dirname, '../../admin/index.html'));
   }
 });
 
 // Serve admin panel index.html for admin route
 app.get('/admin', (req, res) => {
-  // In Vercel, static files should be served from the public directory
-  if (isVercel) {
-    // For Vercel, static files are automatically served from the public directory
-    // So we redirect to the static file
+  // For Railway/Vercel, static files should be served from the public directory
+  if (isRailway || isVercel) {
+    // For Railway/Vercel, static files are automatically served from the public directory
     res.redirect('/index.html');
   } else {
     res.sendFile(path.join(__dirname, '../../admin/index.html'));
@@ -184,25 +193,25 @@ app.get('/api/admin', (req, res) => {
 // Serve admin panel files (needed for files like donation-details.html)
 app.get('/admin/*', (req, res) => {
   const filePath = req.params[0];
-  
+
   // Prevent path traversal attacks by validating the file path
   if (filePath.includes('..') || filePath.startsWith('/')) {
     return res.status(400).json({ error: 'Invalid file path' });
   }
-  
-  if (isVercel) {
-    // For Vercel, static files are automatically served from the public directory
+
+  if (isRailway || isVercel) {
+    // For Railway/Vercel, static files are automatically served from the public directory
     // So we redirect to the static file
     res.redirect(`/${filePath}`);
   } else {
     // Ensure the file path is within the admin directory
     const resolvedPath = path.resolve(path.join(__dirname, '../../admin'));
     const requestedPath = path.resolve(path.join(__dirname, '../../admin', filePath));
-    
+
     if (!requestedPath.startsWith(resolvedPath)) {
       return res.status(400).json({ error: 'Invalid file path' });
     }
-    
+
     res.sendFile(requestedPath);
   }
 });

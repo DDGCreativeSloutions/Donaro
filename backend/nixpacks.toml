@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["nodejs-18_x", "openssl", "pkg-config", "python3"]
+
+[phases.install]
+cmds = ["npm ci --only=production"]
+
+[start]
+cmd = "npm start"
