@@ -5,8 +5,11 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/a
 const isValidUrl = (url: string): boolean => {
   try {
     const parsedUrl = new URL(url);
-    // Only allow localhost or specific trusted domains
-    return parsedUrl.hostname === 'localhost' || parsedUrl.hostname === '127.0.0.1' || parsedUrl.hostname === 'yourdomain.com'; // Replace with your actual domain
+    // Allow localhost for development and vercel.app domains for production
+    return parsedUrl.hostname === 'localhost' || 
+           parsedUrl.hostname === '127.0.0.1' || 
+           parsedUrl.hostname.endsWith('.vercel.app') || // Allow Vercel deployments
+           parsedUrl.hostname === 'yourdomain.com'; // Replace with your actual domain
   } catch {
     return false;
   }
