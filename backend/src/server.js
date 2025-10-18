@@ -16,8 +16,9 @@ const app = express();
 const isVercel = process.env.NOW_REGION || process.env.VERCEL;
 
 // Middleware
+// For mobile apps, we allow all origins since mobile apps don't have the same origin restrictions as web browsers
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL || 'https://yourdomain.com' : "*", // Replace with your actual domain
+  origin: "*", // Allow all origins for mobile app compatibility
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -100,10 +101,14 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// 404 handler (must be last)
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
+// Only use the 404 handler for non-Vercel environments
+// In Vercel, unmatched routes should be handled by the platform
+if (!isVercel) {
+  // 404 handler (must be last)
+  app.use('*', (req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+  });
+}
 
 // Handle Socket.IO for non-Vercel environments only
 // Vercel serverless functions don't support long-running connections like Socket.IO
@@ -112,7 +117,7 @@ if (!isVercel) {
   const server = http.createServer(app);
   io = new Server(server, {
     cors: {
-      origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL || 'https://yourdomain.com' : "*", // Replace with your actual domain
+      origin: "*", // Allow all origins for mobile app compatibility
       methods: ["GET", "POST"]
     }
   });
