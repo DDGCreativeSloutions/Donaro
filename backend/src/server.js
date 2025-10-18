@@ -57,7 +57,7 @@ app.get('/', (req, res) => {
   // In Vercel, static files should be served from the public directory
   if (isVercel) {
     // For Vercel, static files are automatically served from the public directory
-    res.redirect('/index.html');
+    res.sendFile(path.join(__dirname, '../public/index.html'));
   } else {
     res.sendFile(path.join(__dirname, '../../admin/index.html'));
   }
@@ -68,8 +68,7 @@ app.get('/admin', (req, res) => {
   // In Vercel, static files should be served from the public directory
   if (isVercel) {
     // For Vercel, static files are automatically served from the public directory
-    // So we redirect to the static file
-    res.redirect('/index.html');
+    res.sendFile(path.join(__dirname, '../public/index.html'));
   } else {
     res.sendFile(path.join(__dirname, '../../admin/index.html'));
   }
@@ -91,8 +90,14 @@ app.get('/admin/*', (req, res) => {
   
   if (isVercel) {
     // For Vercel, static files are automatically served from the public directory
-    // So we redirect to the static file
-    res.redirect(`/${filePath}`);
+    const resolvedPath = path.resolve(path.join(__dirname, '../public'));
+    const requestedPath = path.resolve(path.join(__dirname, '../public', filePath));
+    
+    if (!requestedPath.startsWith(resolvedPath)) {
+      return res.status(400).json({ error: 'Invalid file path' });
+    }
+    
+    res.sendFile(requestedPath);
   } else {
     // Ensure the file path is within the admin directory
     const resolvedPath = path.resolve(path.join(__dirname, '../../admin'));
