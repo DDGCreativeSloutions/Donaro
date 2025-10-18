@@ -769,7 +769,7 @@
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
         // API Configuration
-        const API_BASE_URL = 'http://192.168.0.6:3001/api';
+        const API_BASE_URL = 'https://donaro-backend.vercel.app/api';
         let authToken = localStorage.getItem('admin_token');
         let socket = null;
 
@@ -821,44 +821,182 @@
         if (authToken) {
             showAdminPanel();
             loadDashboard();
-            initializeSocket();
+            initializeRealTimeUpdates();
         }
         
-        // Initialize Socket.IO connection
-        function initializeSocket() {
-            socket = io('http://192.168.0.6:3001');
-            
-            socket.on('connect', () => {
-                console.log('Connected to Socket.IO server');
-                // Join admin room for real-time updates
-                socket.emit('joinAdminRoom');
-            });
-            
-            // Listen for real-time donation updates
-            socket.on('donationCreated', (donation) => {
-                console.log('New donation created:', donation);
-                // Refresh current view if on relevant page
-                refreshCurrentView();
-            });
-            
-            socket.on('donationStatusUpdated', (donation) => {
-                console.log('Donation status updated:', donation);
-                // Refresh current view if on relevant page
-                refreshCurrentView();
-            });
-            
-            // Listen for real-time withdrawal updates
-            socket.on('withdrawalCreated', (withdrawal) => {
-                console.log('New withdrawal created:', withdrawal);
-                // Refresh current view if on relevant page
-                refreshCurrentView();
-            });
-            
-            socket.on('withdrawalStatusUpdated', (withdrawal) => {
-                console.log('Withdrawal status updated:', withdrawal);
-                // Refresh current view if on relevant page
-                refreshCurrentView();
-            });
+        // Initialize real-time updates (Socket.IO for local, SSE/Polling for Vercel)
+        function initializeRealTimeUpdates() {
+            // For Vercel deployment, we use SSE and polling
+            if (API_BASE_URL.includes('donaro-backend.vercel.app')) {
+                console.log('Using SSE and polling for real-time updates on Vercel');
+
+                // Initialize SSE connection
+                initializeSSE();
+
+                // Start admin dashboard polling (updates every 5 seconds)
+                startAdminPolling();
+
+                // Set up visibility change listener to pause/resume polling
+                document.addEventListener('visibilitychange', function() {
+                    if (document.hidden) {
+                        stopAdminPolling();
+                        closeSSE();
+                    } else {
+                        startAdminPolling();
+                        initializeSSE();
+                    }
+                });
+            } else {
+                // Use Socket.IO for local development
+                socket = io(API_BASE_URL.replace('/api', ''));
+
+                socket.on('connect', () => {
+                    console.log('Connected to Socket.IO server');
+                    socket.emit('joinAdminRoom');
+                });
+
+                // Listen for real-time donation updates
+                socket.on('donationCreated', (donation) => {
+                    console.log('New donation created:', donation);
+                    refreshCurrentView();
+                });
+
+                socket.on('donationStatusUpdated', (donation) => {
+                    console.log('Donation status updated:', donation);
+                    refreshCurrentView();
+                });
+
+                socket.on('withdrawalCreated', (withdrawal) => {
+                    console.log('New withdrawal created:', withdrawal);
+                    refreshCurrentView();
+                });
+
+                socket.on('withdrawalStatusUpdated', (withdrawal) => {
+                    console.log('Withdrawal status updated:', withdrawal);
+                    refreshCurrentView();
+                });
+            }
+        }
+
+        // SSE variables
+        let sseEventSource = null;
+
+        function initializeSSE() {
+            if (sseEventSource) {
+                sseEventSource.close();
+            }
+
+            console.log('Initializing SSE connection...');
+            sseEventSource = new EventSource(API_BASE_URL + '/events');
+
+            sseEventSource.onopen = function(event) {
+                console.log('SSE connection opened');
+            };
+
+            sseEventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('SSE message received:', data);
+
+                    // Handle different event types
+                    if (data.type === 'donationCreated') {
+                        console.log('New donation via SSE:', data.data);
+                        refreshCurrentView();
+                    } else if (data.type === 'donationStatusUpdated') {
+                        console.log('Donation status updated via SSE:', data.data);
+                        refreshCurrentView();
+                    }
+                } catch (error) {
+                    console.error('Error parsing SSE data:', error);
+                }
+            };
+
+            sseEventSource.onerror = function(event) {
+                console.error('SSE connection error:', event);
+                // Attempt to reconnect after 5 seconds
+                setTimeout(() => {
+                    console.log('Attempting to reconnect SSE...');
+                    initializeSSE();
+                }, 5000);
+            };
+        }
+
+        function closeSSE() {
+            if (sseEventSource) {
+                sseEventSource.close();
+                sseEventSource = null;
+                console.log('SSE connection closed');
+            }
+        }
+
+        // Admin polling variables
+        let adminPollingInterval = null;
+        let lastStatsUpdate = 0;
+
+        function startAdminPolling() {
+            if (adminPollingInterval) return; // Already polling
+
+            console.log('Starting admin dashboard polling...');
+            adminPollingInterval = setInterval(async () => {
+                try {
+                    const currentTime = Date.now();
+                    // Throttle updates to avoid too frequent requests
+                    if (currentTime - lastStatsUpdate < 3000) return;
+
+                    const [pendingDonations, approvedDonations, rejectedDonations, pendingWithdrawals] = await Promise.all([
+                        fetch(API_BASE_URL + '/donations/status/pending', {
+                            headers: { 'Authorization': 'Bearer ' + authToken }
+                        }).then(r => r.ok ? r.json() : []),
+                        fetch(API_BASE_URL + '/donations/status/approved', {
+                            headers: { 'Authorization': 'Bearer ' + authToken }
+                        }).then(r => r.ok ? r.json() : []),
+                        fetch(API_BASE_URL + '/donations/status/rejected', {
+                            headers: { 'Authorization': 'Bearer ' + authToken }
+                        }).then(r => r.ok ? r.json() : []),
+                        fetch(API_BASE_URL + '/withdrawals/status/pending', {
+                            headers: { 'Authorization': 'Bearer ' + authToken }
+                        }).then(r => r.ok ? r.json() : [])
+                    ]);
+
+                    // Update dashboard stats if on dashboard
+                    const activeItem = document.querySelector('.sidebar li.active');
+                    if (activeItem && activeItem.textContent.trim() === 'Dashboard') {
+                        updateDashboardStats({
+                            pendingDonations: pendingDonations.length,
+                            approvedDonations: approvedDonations.length,
+                            rejectedDonations: rejectedDonations.length,
+                            pendingWithdrawals: pendingWithdrawals.length
+                        });
+                    }
+
+                    lastStatsUpdate = currentTime;
+                } catch (error) {
+                    console.error('Error during admin polling:', error);
+                }
+            }, 5000); // Poll every 5 seconds
+        }
+
+        function stopAdminPolling() {
+            if (adminPollingInterval) {
+                clearInterval(adminPollingInterval);
+                adminPollingInterval = null;
+                console.log('Stopped admin dashboard polling');
+            }
+        }
+
+        function updateDashboardStats(stats) {
+            // Update the dashboard cards with new stats
+            const totalDonations = stats.pendingDonations + stats.approvedDonations + stats.rejectedDonations;
+            const totalCredits = stats.approvedDonations * 10; // Assuming 10 credits per donation
+
+            // Update stat cards if they exist
+            const statCards = document.querySelectorAll('.stat-card .value');
+            if (statCards.length >= 4) {
+                statCards[0].textContent = totalDonations;
+                statCards[1].textContent = stats.pendingDonations;
+                statCards[2].textContent = stats.approvedDonations;
+                statCards[3].textContent = totalCredits;
+            }
         }
         
         // Authentication functions
@@ -893,7 +1031,7 @@
                 
                 showAdminPanel();
                 loadDashboard();
-                initializeSocket();
+                initializeRealTimeUpdates();
             } catch (error) {
                 errorDiv.textContent = error.message;
             }
@@ -902,10 +1040,19 @@
         function logout() {
             authToken = null;
             localStorage.removeItem('admin_token');
+
+            // Stop polling if active
+            stopAdminPolling();
+
+            // Close SSE connection if active
+            closeSSE();
+
+            // Disconnect Socket.IO if active
             if (socket) {
                 socket.disconnect();
                 socket = null;
             }
+
             showLoginForm();
         }
         

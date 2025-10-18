@@ -77,10 +77,64 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/otp', otpRoutes);
 app.use('/api/settings', settingsRoutes);
 
+// Set SSE broadcast function for routes to use
+if (donationRoutes.setSSEBroadcast) {
+  donationRoutes.setSSEBroadcast(broadcastSSE);
+}
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'Donations Backend is running' });
 });
+
+// Server-Sent Events endpoint for real-time updates (Vercel compatible)
+app.get('/api/events', (req, res) => {
+  // Set headers for SSE
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Cache-Control'
+  });
+
+  // Send initial connection message
+  res.write('data: {"type": "connected", "message": "SSE connection established"}\n\n');
+
+  // Store the response object to send events later
+  const clientId = Date.now() + Math.random();
+  sseClients.set(clientId, res);
+
+  console.log(`SSE client connected: ${clientId}`);
+
+  // Handle client disconnect
+  req.on('close', () => {
+    sseClients.delete(clientId);
+    console.log(`SSE client disconnected: ${clientId}`);
+  });
+
+  req.on('error', () => {
+    sseClients.delete(clientId);
+    console.log(`SSE client error: ${clientId}`);
+  });
+});
+
+// Store SSE clients
+const sseClients = new Map();
+
+// Function to broadcast events to all SSE clients
+function broadcastSSE(data) {
+  const message = `data: ${JSON.stringify(data)}\n\n`;
+
+  sseClients.forEach((client, clientId) => {
+    try {
+      client.write(message);
+    } catch (error) {
+      console.error(`Error sending SSE to client ${clientId}:`, error);
+      sseClients.delete(clientId);
+    }
+  });
+}
 
 // Serve admin panel index.html for root route
 app.get('/', (req, res) => {
@@ -165,37 +219,37 @@ if (!isVercel) {
     },
     allowEIO3: true // Allow Engine.IO v3 compatibility
   });
-  
-  // Store io instance in app locals so routes can access it
-  app.set('io', io);
-  
+
   // Socket.io connection
   io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
-    
+
     socket.on('joinRoom', (userId) => {
       socket.join(userId);
       console.log(`User ${userId} joined room`);
     });
-    
+
     socket.on('joinAdminRoom', () => {
       socket.join('admin');
       console.log(`Admin joined admin room`);
     });
-    
+
     socket.on('disconnect', () => {
       console.log('User disconnected:', socket.id);
     });
   });
-  
+
   const PORT = process.env.PORT || 3001;
-  
+
   server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });
-  
+
   module.exports = { app, io, server };
 } else {
+  // For Vercel, we'll use Server-Sent Events as an alternative
+  console.log('Vercel deployment detected - Socket.IO disabled, SSE available');
+
   // For Vercel, we export the app for the serverless function
   // Note: Socket.IO is not available in serverless environments
   // But we still make the app available for routes to potentially use

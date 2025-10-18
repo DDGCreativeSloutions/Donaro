@@ -21,7 +21,7 @@ import {
 // Get API base URL from the api service
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?
   process.env.EXPO_PUBLIC_API_URL :
-  'http://192.168.0.6:3001/api';
+  'https://donaro-backend.vercel.app/api';
 
 // Validate URL to prevent SSRF
 const isValidUrl = (url: string): boolean => {
@@ -44,7 +44,7 @@ const isValidUrl = (url: string): boolean => {
     }
 
     // Allow Vercel deployments
-    if (hostname.endsWith('.vercel.app')) {
+    if (hostname.endsWith('.vercel.app') || hostname === 'donaro-backend.vercel.app') {
       return true;
     }
 

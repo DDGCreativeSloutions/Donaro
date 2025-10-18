@@ -22,7 +22,7 @@ const isValidUrl = (url: string): boolean => {
     }
 
     // Allow Vercel deployments
-    if (hostname.endsWith('.vercel.app')) {
+    if (hostname.endsWith('.vercel.app') || hostname === 'donaro-backend.vercel.app') {
       return true;
     }
 
@@ -126,7 +126,7 @@ class ApiService {
     if (token && !this.socket) {
       // Check if we're running against a Vercel deployment
       const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
-      const isVercelDeployment = API_URL.includes('.vercel.app');
+      const isVercelDeployment = API_URL.includes('.vercel.app') || API_URL.includes('donaro-backend.vercel.app');
 
       if (!isVercelDeployment) {
         this.initializeSocket();
@@ -141,7 +141,7 @@ class ApiService {
 
     // Check if we're running against a Vercel deployment (Socket.IO not supported)
     const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
-    const isVercelDeployment = API_URL.includes('.vercel.app');
+    const isVercelDeployment = API_URL.includes('.vercel.app') || API_URL.includes('donaro-backend.vercel.app');
 
     if (isVercelDeployment) {
       console.log('Running against Vercel deployment - Socket.IO disabled, using polling fallback');
@@ -221,6 +221,120 @@ class ApiService {
     } else {
       console.log('Socket.IO not available - real-time withdrawal status updates disabled');
     }
+  }
+
+  // Polling-based real-time updates for Vercel
+  private pollingIntervals: Map<string, number> = new Map();
+  private lastFetchTimes: Map<string, number> = new Map();
+
+  public startPollingUpdates(
+    userId: string,
+    onDonationUpdate: (donations: Donation[]) => void,
+    onWithdrawalUpdate: (withdrawals: Withdrawal[]) => void,
+    interval: number = 10000 // 10 seconds
+  ) {
+    if (this.socket) {
+      console.log('Socket.IO available - using WebSocket for real-time updates');
+      return;
+    }
+
+    console.log('Starting polling-based real-time updates for Vercel deployment');
+
+    // Stop any existing polling
+    this.stopPollingUpdates();
+
+    // Poll for donation updates
+    const donationInterval = setInterval(async () => {
+      try {
+        const donations = await this.getDonations(userId);
+        const currentTime = Date.now();
+        const lastFetchTime = this.lastFetchTimes.get('donations') || 0;
+
+        // Only trigger callback if we have new data (simple check)
+        if (donations.length > 0 && currentTime - lastFetchTime > 5000) {
+          onDonationUpdate(donations);
+          this.lastFetchTimes.set('donations', currentTime);
+        }
+      } catch (error) {
+        console.error('Error polling donations:', error);
+      }
+    }, interval);
+
+    // Poll for withdrawal updates
+    const withdrawalInterval = setInterval(async () => {
+      try {
+        const withdrawals = await this.getWithdrawals(userId);
+        const currentTime = Date.now();
+        const lastFetchTime = this.lastFetchTimes.get('withdrawals') || 0;
+
+        // Only trigger callback if we have new data
+        if (withdrawals.length > 0 && currentTime - lastFetchTime > 5000) {
+          onWithdrawalUpdate(withdrawals);
+          this.lastFetchTimes.set('withdrawals', currentTime);
+        }
+      } catch (error) {
+        console.error('Error polling withdrawals:', error);
+      }
+    }, interval);
+
+    this.pollingIntervals.set('donations', donationInterval);
+    this.pollingIntervals.set('withdrawals', withdrawalInterval);
+  }
+
+  public stopPollingUpdates() {
+    this.pollingIntervals.forEach((interval) => {
+      clearInterval(interval);
+    });
+    this.pollingIntervals.clear();
+    this.lastFetchTimes.clear();
+  }
+
+  // Admin polling for real-time admin dashboard updates
+  public startAdminPolling(
+    onStatsUpdate: (stats: {
+      pendingDonations: number;
+      approvedDonations: number;
+      rejectedDonations: number;
+      pendingWithdrawals: number;
+    }) => void,
+    interval: number = 5000 // 5 seconds for admin
+  ) {
+    if (this.socket) {
+      console.log('Socket.IO available - using WebSocket for admin updates');
+      return;
+    }
+
+    console.log('Starting admin polling for Vercel deployment');
+
+    // Stop any existing admin polling
+    const existingInterval = this.pollingIntervals.get('admin');
+    if (existingInterval) {
+      clearInterval(existingInterval);
+    }
+
+    const adminInterval = setInterval(async () => {
+      try {
+        const [pendingDonations, approvedDonations, rejectedDonations, pendingWithdrawals] = await Promise.all([
+          this.getPendingDonations().catch(() => []),
+          this.getApprovedDonations().catch(() => []),
+          this.getRejectedDonations().catch(() => []),
+          this.getPendingWithdrawals().catch(() => [])
+        ]);
+
+        const stats = {
+          pendingDonations: pendingDonations.length,
+          approvedDonations: approvedDonations.length,
+          rejectedDonations: rejectedDonations.length,
+          pendingWithdrawals: pendingWithdrawals.length
+        };
+
+        onStatsUpdate(stats);
+      } catch (error) {
+        console.error('Error polling admin stats:', error);
+      }
+    }, interval);
+
+    this.pollingIntervals.set('admin', adminInterval);
   }
 
   private getHeaders() {

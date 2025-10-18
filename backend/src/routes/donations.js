@@ -5,6 +5,14 @@ const { authenticateToken, authorizeAdmin } = require('../utils/authMiddleware')
 
 const router = express.Router();
 
+// SSE broadcast function (will be set by server.js)
+let broadcastSSE = null;
+
+// Function to set the SSE broadcast function
+function setSSEBroadcast(broadcastFunction) {
+  broadcastSSE = broadcastFunction;
+}
+
 // Apply authentication middleware to all routes
 router.use(authenticateToken);
 
@@ -197,11 +205,20 @@ router.post('/', async (req, res) => {
     });
     console.log('Donation created successfully:', donation);
 
-    // Emit real-time event for new donation (with error handling)
+    // Emit real-time events for new donation (with error handling)
     try {
       const io = req.app.get('io');
       if (io) {
         io.to(userId).emit('donationCreated', donation);
+      }
+
+      // Also broadcast via SSE for Vercel compatibility
+      if (broadcastSSE) {
+        broadcastSSE({
+          type: 'donationCreated',
+          data: donation,
+          userId: userId
+        });
       }
     } catch (socketError) {
       console.warn('Failed to emit socket event:', socketError);
@@ -278,12 +295,21 @@ router.put('/:id/status', authorizeAdmin, async (req, res) => {
       updatedDonation.user.totalDonations += 1;
     }
 
-    // Emit real-time event for status update
+    // Emit real-time events for status update
     try {
       const io = req.app.get('io');
       if (io) {
         io.to(updatedDonation.userId).emit('donationStatusUpdated', updatedDonation);
         io.to('admin').emit('donationStatusUpdated', updatedDonation);
+      }
+
+      // Also broadcast via SSE for Vercel compatibility
+      if (broadcastSSE) {
+        broadcastSSE({
+          type: 'donationStatusUpdated',
+          data: updatedDonation,
+          userId: updatedDonation.userId
+        });
       }
     } catch (socketError) {
       console.warn('Failed to emit socket event:', socketError);
