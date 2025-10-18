@@ -89,9 +89,17 @@ class ApiService {
 
   public setToken(token: string) {
     this.token = token;
-    // Initialize socket connection when token is set
+    // Initialize socket connection when token is set (only if not Vercel deployment)
     if (token && !this.socket) {
-      this.initializeSocket();
+      // Check if we're running against a Vercel deployment
+      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+      const isVercelDeployment = API_URL.includes('.vercel.app');
+
+      if (!isVercelDeployment) {
+        this.initializeSocket();
+      } else {
+        console.log('Vercel deployment detected - Socket.IO disabled');
+      }
     }
   }
 
