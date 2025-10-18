@@ -23,8 +23,7 @@ module.exports = async (req, res) => {
       origin.includes('127.0.0.1') ||
       origin.includes('.expo.') ||
       origin.includes('expo.dev') ||
-      origin.includes('.vercel.app') ||
-      origin.includes('.supabase.co')
+      origin.includes('.vercel.app')
     )) {
       res.setHeader('Access-Control-Allow-Origin', origin);
     } else {

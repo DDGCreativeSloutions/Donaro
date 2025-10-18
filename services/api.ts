@@ -21,10 +21,10 @@ const isValidUrl = (url: string): boolean => {
       return true;
     }
 
-    // Allow Supabase
-    if (hostname.endsWith('.supabase.co')) {
-      return true;
-    }
+    // Add your allowed hostnames here
+    // if (hostname.endsWith('yourdomain.com')) {
+    //   return true;
+    // }
 
     // Allow custom domains (add your actual domain here)
     if (hostname === 'yourdomain.com') {

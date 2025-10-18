@@ -16,7 +16,7 @@ const Card = ({ children, style, variant = 'elevated' }: CardProps) => {
   const getCardStyle = () => {
     const baseStyle = [styles.card, { backgroundColor: colors.card }, style];
     const variantStyle = {
-      elevated: { shadowColor: colors.black, elevation: 5, shadowOpacity: 0.1 },
+      elevated: { elevation: 5, boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)' },
       outline: { borderWidth: 1, borderColor: colors.border },
       filled: { backgroundColor: colors.background },
     };

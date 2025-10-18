@@ -26,7 +26,9 @@ const isValidUrl = (url: string): boolean => {
   try {
     const parsedUrl = new URL(url);
     // Only allow localhost or specific trusted domains
-    return parsedUrl.hostname === 'localhost' || parsedUrl.hostname === '127.0.0.1' || parsedUrl.hostname === 'yourdomain.com'; // Replace with your actual domain
+    return parsedUrl.hostname === 'localhost' ||
+           parsedUrl.hostname === '127.0.0.1' ||
+           parsedUrl.hostname === 'donaro-backend.vercel.app';
   } catch {
     return false;
   }
@@ -282,10 +284,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 25,
     elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
   },
   inputContainer: {
     marginBottom: 20,

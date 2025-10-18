@@ -37,10 +37,10 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // Allow Supabase
-    if (origin.includes('.supabase.co')) {
-      return callback(null, true);
-    }
+    // CORS configuration - add your allowed origins here
+    // if (origin.includes('yourdomain.com')) {
+    //   return callback(null, true);
+    // }
 
     // Reject other origins
     callback(new Error('Not allowed by CORS'));

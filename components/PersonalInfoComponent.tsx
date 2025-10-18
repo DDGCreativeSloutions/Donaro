@@ -190,10 +190,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 25,
     elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
   },
   section: {
     marginBottom: 30,
@@ -230,10 +227,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginBottom: 15,
     elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
   },
   statValue: {
     fontSize: 20,
