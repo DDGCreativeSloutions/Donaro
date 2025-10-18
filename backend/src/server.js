@@ -24,8 +24,9 @@ app.use(cors({
 
     // Allow localhost for development (including all ports)
     if (origin.includes('localhost') || origin.includes('127.0.0.1') ||
-        origin.match(/^http:\/\/localhost:\d+$/) || origin.match(/^http:\/\/127\.0\.0\.1:\d+$/) ||
-        origin.match(/^http:\/\/192\.168\.\d+\.\d+:\d+$/)) {
+        origin.match(/^https?:\/\/localhost:\d+$/) || origin.match(/^https?:\/\/127\.0\.0\.1:\d+$/) ||
+        origin.match(/^https?:\/\/192\.168\.\d+\.\d+:\d+$/) ||
+        origin === 'http://localhost:8081' || origin === 'https://localhost:8081') {
       return callback(null, true);
     }
 
@@ -35,7 +36,7 @@ app.use(cors({
     }
 
     // Allow Vercel deployments
-    if (origin.includes('.vercel.app')) {
+    if (origin.includes('.vercel.app') || origin === 'https://donaro-backend.vercel.app') {
       return callback(null, true);
     }
 
@@ -77,6 +78,23 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/otp', otpRoutes);
 app.use('/api/settings', settingsRoutes);
 
+// Additional CORS headers for API routes
+app.use('/api/*', (req, res, next) => {
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+    res.sendStatus(200);
+  } else {
+    // Set CORS headers for actual requests
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    next();
+  }
+});
+
 // Set SSE broadcast function for routes to use
 if (donationRoutes.setSSEBroadcast) {
   donationRoutes.setSSEBroadcast(broadcastSSE);
@@ -95,7 +113,8 @@ app.get('/api/events', (req, res) => {
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Cache-Control'
+    'Access-Control-Allow-Headers': 'Cache-Control',
+    'Access-Control-Allow-Credentials': 'true'
   });
 
   // Send initial connection message
