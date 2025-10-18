@@ -34,7 +34,7 @@
       "dest": "/index.html"
     },
     {
-      "src": "/(.*)",
+      "src": "^/(?!api|admin).*",
       "dest": "api/index.js"
     }
   ],
