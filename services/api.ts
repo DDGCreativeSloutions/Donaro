@@ -97,56 +97,88 @@ class ApiService {
 
   private initializeSocket() {
     if (!this.token) return;
-    
-    const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
-    this.socket = io(SOCKET_URL, {
-      auth: {
-        token: this.token
-      }
-    });
 
-    this.socket.on('connect', () => {
-      console.log('Connected to Socket.IO server');
-    });
+    // Check if we're running against a Vercel deployment (Socket.IO not supported)
+    const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+    const isVercelDeployment = API_URL.includes('.vercel.app');
 
-    this.socket.on('disconnect', () => {
-      console.log('Disconnected from Socket.IO server');
-    });
+    if (isVercelDeployment) {
+      console.log('Running against Vercel deployment - Socket.IO disabled, using polling fallback');
+      this.socket = null;
+      return;
+    }
+
+    try {
+      this.socket = io(API_URL, {
+        auth: {
+          token: this.token
+        }
+      });
+
+      this.socket.on('connect', () => {
+        console.log('Connected to Socket.IO server');
+      });
+
+      this.socket.on('disconnect', () => {
+        console.log('Disconnected from Socket.IO server');
+      });
+
+      this.socket.on('connect_error', (error) => {
+        console.log('Socket.IO connection error:', error.message);
+        console.log('Falling back to polling for real-time updates');
+        this.socket = null;
+      });
+    } catch (error) {
+      console.log('Socket.IO initialization failed, using polling fallback:', error);
+      this.socket = null;
+    }
   }
 
   public joinRoom(userId: string) {
     if (this.socket) {
       this.socket.emit('joinRoom', userId);
+    } else {
+      console.log('Socket.IO not available - real-time features disabled');
     }
   }
 
   public joinAdminRoom() {
     if (this.socket) {
       this.socket.emit('joinAdminRoom');
+    } else {
+      console.log('Socket.IO not available - real-time features disabled');
     }
   }
 
   public onDonationCreated(callback: (donation: Donation) => void) {
     if (this.socket) {
       this.socket.on('donationCreated', callback);
+    } else {
+      console.log('Socket.IO not available - real-time donation updates disabled');
     }
   }
 
   public onDonationStatusUpdated(callback: (donation: Donation) => void) {
     if (this.socket) {
       this.socket.on('donationStatusUpdated', callback);
+    } else {
+      console.log('Socket.IO not available - real-time donation status updates disabled');
     }
   }
 
   public onWithdrawalCreated(callback: (withdrawal: Withdrawal) => void) {
     if (this.socket) {
       this.socket.on('withdrawalCreated', callback);
+    } else {
+      console.log('Socket.IO not available - real-time withdrawal updates disabled');
     }
   }
 
   public onWithdrawalStatusUpdated(callback: (withdrawal: Withdrawal) => void) {
     if (this.socket) {
       this.socket.on('withdrawalStatusUpdated', callback);
+    } else {
+      console.log('Socket.IO not available - real-time withdrawal status updates disabled');
     }
   }
 
