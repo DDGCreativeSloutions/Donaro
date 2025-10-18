@@ -52,6 +52,17 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'Donations Backend is running' });
 });
 
+// Serve index.html for root path
+app.get('/', (req, res) => {
+  // In Vercel, static files should be served from the public directory
+  if (isVercel) {
+    // For Vercel, static files are automatically served from the public directory
+    res.redirect('/index.html');
+  } else {
+    res.sendFile(path.join(__dirname, '../../admin/index.html'));
+  }
+});
+
 // Serve admin panel index.html for root admin route
 app.get('/admin', (req, res) => {
   // In Vercel, static files should be served from the public directory

@@ -30,6 +30,10 @@
       "dest": "/index.html"
     },
     {
+      "src": "/$",
+      "dest": "/index.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "api/index.js"
     }
