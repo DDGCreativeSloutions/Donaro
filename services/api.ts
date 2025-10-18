@@ -288,7 +288,7 @@ class ApiService {
     try {
       // Validate API URL before making requests
       if (!isValidUrl(API_BASE_URL)) {
-        throw new Error('Invalid API configuration');
+        console.warn('API URL validation failed, but continuing');
       }
       
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -368,7 +368,7 @@ class ApiService {
       
       // Validate API URL before making requests
       if (!isValidUrl(API_BASE_URL)) {
-        throw new Error('Invalid API configuration');
+        console.warn('API URL validation failed, but continuing');
       }
       
       // Create a timeout promise
