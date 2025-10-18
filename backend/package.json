@@ -4,9 +4,11 @@
   "description": "Backend for Donaro App",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
+  "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "build": "prisma generate --schema=./prisma/schema.prod.prisma",
+  "build": "prisma generate --schema=./prisma/schema.prod.prisma",
+  "vercel-build": "npm run build",
+  "postinstall": "prisma generate --schema=./prisma/schema.prod.prisma || true",
     "migrate": "prisma migrate dev",
     "migrate:prod": "node migrate-prod.js",
     "deploy:vercel": "node deploy-vercel.js",
