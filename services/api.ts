@@ -48,9 +48,9 @@ const isValidUrl = (url: string): boolean => {
   }
 };
 
-// Ensure API_BASE_URL is valid
+// Ensure API_BASE_URL is valid - more permissive for development
 if (!isValidUrl(API_BASE_URL)) {
-  console.warn('API base URL may be invalid, but continuing for development');
+  console.warn('API base URL validation failed, but continuing for development compatibility');
 }
 
 import { io, Socket } from 'socket.io-client';

@@ -15,18 +15,14 @@ const app = express();
 // Vercel will handle the server creation
 const isVercel = process.env.NOW_REGION || process.env.VERCEL;
 
-// Middleware
-// For mobile apps, we allow all origins since mobile apps don't have the same origin restrictions as web browsers
+// Middleware - Simplified CORS for better compatibility
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
 
-    // Allow localhost for development (including all ports)
-    if (origin.includes('localhost') || origin.includes('127.0.0.1') ||
-        origin.match(/^https?:\/\/localhost:\d+$/) || origin.match(/^https?:\/\/127\.0\.0\.1:\d+$/) ||
-        origin.match(/^https?:\/\/192\.168\.\d+\.\d+:\d+$/) ||
-        origin === 'http://localhost:8081' || origin === 'https://localhost:8081') {
+    // Allow all localhost origins for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
       return callback(null, true);
     }
 
@@ -35,22 +31,23 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // Allow Vercel deployments
-    if (origin.includes('.vercel.app') || origin === 'https://donaro-backend.vercel.app') {
+    // Allow all HTTP origins for development
+    if (origin.startsWith('http://')) {
       return callback(null, true);
     }
 
-    // CORS configuration - add your allowed origins here
-    // if (origin.includes('yourdomain.com')) {
-    //   return callback(null, true);
-    // }
+    // Allow all HTTPS origins for development
+    if (origin.startsWith('https://')) {
+      return callback(null, true);
+    }
 
     // Reject other origins
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Cache-Control'],
+  exposedHeaders: ['Content-Length', 'X-Requested-With']
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
