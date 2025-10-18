@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 
 // Script to handle production database migrations
+require('dotenv').config();
 const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 console.log('Setting up production database...');
 
@@ -14,13 +17,20 @@ try {
     process.exit(1);
   }
 
+  // Remove existing migrations (SQLite to PostgreSQL switch)
+  const migrationsDir = './prisma/migrations';
+  if (fs.existsSync(migrationsDir)) {
+    console.log('Removing existing SQLite migrations...');
+    fs.rmSync(migrationsDir, { recursive: true, force: true });
+  }
+
   // Generate Prisma client for production
   console.log('Generating Prisma client...');
   execSync('npx prisma generate --schema=./prisma/schema.prod.prisma', { stdio: 'inherit' });
 
-  // Run migrations
-  console.log('Running database migrations...');
-  execSync('npx prisma migrate deploy --schema=./prisma/schema.prod.prisma', { stdio: 'inherit' });
+  // Push schema to database (for Accelerate)
+  console.log('Pushing schema to Accelerate database...');
+  execSync('npx prisma db push --schema=./prisma/schema.prod.prisma', { stdio: 'inherit' });
 
   console.log('Production database setup completed successfully!');
 } catch (error) {

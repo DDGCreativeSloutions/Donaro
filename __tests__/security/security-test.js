@@ -10,7 +10,7 @@ class SecurityTest {
       failed: [],
       warnings: []
     };
-    this.baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+    this.baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
   }
 
   log(type, test, message, severity = 'medium') {

@@ -48,7 +48,7 @@ const LoginScreen = () => {
       // Check if user is admin and redirect accordingly
       if (userData.isAdmin) {
         // Open admin panel in browser
-        const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+        const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.0.6:3001';
         WebBrowser.openBrowserAsync(`${API_BASE_URL}/admin`);
       } else {
         // Redirect to regular user tabs

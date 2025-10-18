@@ -45,7 +45,7 @@ A world-class mobile application for verifying community donations and earning r
    npm run dev
    ```
 
-   The backend server will start on http://localhost:3000
+   The backend server will start on http://localhost:3001
 
 ### Frontend Setup
 
@@ -73,7 +73,7 @@ A world-class mobile application for verifying community donations and earning r
 
 The admin panel is accessible at:
 ```
-http://localhost:3000/admin
+http://localhost:3001/admin
 ```
 
 Use the following credentials to log in as admin:
@@ -173,12 +173,12 @@ For detailed API documentation, see [backend/README.md](backend/README.md)
 
 ### Frontend (.env file in root directory)
 ```
-EXPO_PUBLIC_API_URL=http://localhost:3000
+EXPO_PUBLIC_API_URL=http://localhost:3001
 ```
 
 ### Backend (.env file in backend directory)
 ```env
-PORT=3000
+PORT=3001
 JWT_SECRET=[REDACTED] # Generate a strong secret key
 DATABASE_URL=file:./dev.db
 ```

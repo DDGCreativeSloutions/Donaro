@@ -149,7 +149,7 @@ const DashboardScreen = () => {
           <View style={styles.statsContainer}>
             {renderStatCard('Total Points', stats.totalCredits, 'award', colors.primary)}
             {renderStatCard('Verifications', stats.totalDonations, 'check-circle', colors.secondary)}
-            {renderStatCard('Rewards', '₹' + stats.withdrawable, 'rupee', colors.accent)}
+            {renderStatCard('Rewards', '₹' + stats.withdrawable, 'dollar-sign', colors.accent)}
           </View>
 
           {/* Quick Actions */}

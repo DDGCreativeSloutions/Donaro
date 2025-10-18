@@ -22,8 +22,10 @@ app.use(cors({
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
 
-    // Allow localhost for development
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    // Allow localhost for development (including all ports)
+    if (origin.includes('localhost') || origin.includes('127.0.0.1') ||
+        origin.match(/^http:\/\/localhost:\d+$/) || origin.match(/^http:\/\/127\.0\.0\.1:\d+$/) ||
+        origin.match(/^http:\/\/192\.168\.\d+\.\d+:\d+$/)) {
       return callback(null, true);
     }
 
@@ -158,8 +160,10 @@ if (!isVercel) {
   io = new Server(server, {
     cors: {
       origin: "*", // Allow all origins for mobile app compatibility
-      methods: ["GET", "POST"]
-    }
+      methods: ["GET", "POST"],
+      credentials: true
+    },
+    allowEIO3: true // Allow Engine.IO v3 compatibility
   });
   
   // Store io instance in app locals so routes can access it
@@ -184,7 +188,7 @@ if (!isVercel) {
     });
   });
   
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT || 3001;
   
   server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

@@ -1,6 +1,6 @@
 import SplashScreenComponent from '@/components/SplashScreen';
 import { useColorScheme } from '@/components/useColorScheme';
-import { UserProvider } from '@/contexts/UserContext';
+import { UserProvider, useUser } from '@/contexts/UserContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -118,19 +118,35 @@ function RootLayoutNav() {
     );
   }
 
-  // Main app navigation
+  // Main app navigation with role-based routing
   return (
     <UserProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="signup" options={{ headerShown: false }} />
-          <Stack.Screen name="terms" options={{ headerShown: false }} />
-          <Stack.Screen name="privacy" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-        </Stack>
+        <MainAppNavigation />
       </ThemeProvider>
     </UserProvider>
+  );
+}
+
+/**
+ * Main app navigation component that handles role-based routing
+ */
+function MainAppNavigation() {
+  const { user } = useUser();
+
+  return (
+    <Stack>
+      {/* Show different layouts based on user role */}
+      {user?.isAdmin ? (
+        <Stack.Screen name="(admin)" options={{ headerShown: false }} />
+      ) : (
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      )}
+      <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="signup" options={{ headerShown: false }} />
+      <Stack.Screen name="terms" options={{ headerShown: false }} />
+      <Stack.Screen name="privacy" options={{ headerShown: false }} />
+      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+    </Stack>
   );
 }

@@ -64,7 +64,7 @@ const TabLayout = () => {
         <Tabs.Screen
           name="donate"
           options={{
-            title: 'Verify',
+            title: 'Donate',
             tabBarIcon: ({ color }) => <TabBarIcon name="plus-circle" color={color} />,
           }}
         />

@@ -578,7 +578,7 @@ node scripts/clean-test-data.js
 #### Test Environment Variables
 ```env
 # Frontend (.env.test)
-EXPO_PUBLIC_API_URL=http://localhost:3000
+EXPO_PUBLIC_API_URL=http://localhost:3001
 NODE_ENV=test
 
 # Backend (.env.test)

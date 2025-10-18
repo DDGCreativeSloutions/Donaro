@@ -8,16 +8,41 @@ import React, { useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 // Get API base URL from environment
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?
+  process.env.EXPO_PUBLIC_API_URL :
+  'http://192.168.0.6:3001/api';
 
 // Validate URL to prevent SSRF
 const isValidUrl = (url: string): boolean => {
   try {
+    if (!url || url.trim() === '') {
+      return false;
+    }
+
     const parsedUrl = new URL(url);
-    // Only allow localhost or specific trusted domains
-    return parsedUrl.hostname === 'localhost' ||
-           parsedUrl.hostname === '127.0.0.1' ||
-           parsedUrl.hostname === 'donaro-backend.vercel.app';
+    const hostname = parsedUrl.hostname.toLowerCase();
+
+    // Allow localhost for development
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return true;
+    }
+
+    // Allow IP addresses for development
+    if (hostname.match(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/)) {
+      return true;
+    }
+
+    // Allow Vercel deployments
+    if (hostname.endsWith('.vercel.app')) {
+      return true;
+    }
+
+    // Add your allowed hostnames here
+    // if (hostname.endsWith('yourdomain.com')) {
+    //   return true;
+    // }
+
+    return false;
   } catch {
     return false;
   }

@@ -726,8 +726,9 @@
         </button>
         <h1>Donation Admin Panel</h1>
         <div class="header-controls" id="header-controls" style="display: none;">
-            <button class="btn btn-primary" onclick="refreshData()"><i class="fas fa-sync-alt"></i></button>
-            <button class="btn btn-primary" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
+            <button class="btn btn-primary" onclick="refreshData()" title="Refresh Data"><i class="fas fa-sync-alt"></i></button>
+            <button class="btn btn-primary" onclick="testAllAPIs()" title="Test All APIs"><i class="fas fa-flask"></i></button>
+            <button class="btn btn-primary" onclick="logout()" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
         </div>
     </div>
     
@@ -768,9 +769,14 @@
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
         // API Configuration
-        const API_BASE_URL = 'http://localhost:3000/api';
+        const API_BASE_URL = 'http://192.168.0.6:3001/api';
         let authToken = localStorage.getItem('admin_token');
         let socket = null;
+
+        // Debug: Show current auth status
+        console.log('🔐 Admin Panel Loaded');
+        console.log('🏠 API Base URL:', API_BASE_URL);
+        console.log('🔑 Auth Token:', authToken ? 'Present (' + authToken.substring(0, 20) + '...)' : 'Not found');
         
         // Mobile menu toggle
         document.addEventListener('DOMContentLoaded', function() {
@@ -820,7 +826,7 @@
         
         // Initialize Socket.IO connection
         function initializeSocket() {
-            socket = io('http://localhost:3000');
+            socket = io('http://192.168.0.6:3001');
             
             socket.on('connect', () => {
                 console.log('Connected to Socket.IO server');
@@ -904,38 +910,50 @@
         }
         
         function showAdminPanel() {
-            document.getElementById('login-container').style.display = 'none';
-            document.getElementById('sidebar').style.display = 'block';
-            document.getElementById('header-controls').style.display = 'flex';
-            
-            // Show menu toggle on mobile
+            const loginContainer = document.getElementById('login-container');
+            const sidebar = document.getElementById('sidebar');
+            const headerControls = document.getElementById('header-controls');
             const menuToggle = document.getElementById('menu-toggle');
+
+            if (loginContainer) loginContainer.style.display = 'none';
+            if (sidebar) sidebar.style.display = 'block';
+            if (headerControls) headerControls.style.display = 'flex';
+
+            // Show menu toggle on mobile
             if (menuToggle) {
                 menuToggle.style.display = 'block';
             }
         }
         
         function showLoginForm() {
-            document.getElementById('login-container').style.display = 'block';
-            document.getElementById('sidebar').style.display = 'none';
-            document.getElementById('header-controls').style.display = 'none';
-            document.getElementById('main-content').innerHTML = 
-                '<div class="login-container" id="login-container">' +
-                    '<h2 style="text-align: center; margin-bottom: 1.5rem;">Admin Login</h2>' +
-                    '<div class="form-group">' +
-                        '<label for="email">Email</label>' +
-                        '<input type="email" id="email" placeholder="Enter your email">' +
-                    '</div>' +
-                    '<div class="form-group">' +
-                        '<label for="password">Password</label>' +
-                        '<input type="password" id="password" placeholder="Enter your password">' +
-                    '</div>' +
-                    '<button class="btn btn-primary" onclick="login()" style="width: 100%;">Login</button>' +
-                    '<div id="login-error" class="error-message"></div>' +
-                '</div>';
-            
-            // Hide menu toggle on login screen
+            const loginContainer = document.getElementById('login-container');
+            const sidebar = document.getElementById('sidebar');
+            const headerControls = document.getElementById('header-controls');
+            const mainContent = document.getElementById('main-content');
             const menuToggle = document.getElementById('menu-toggle');
+
+            if (loginContainer) loginContainer.style.display = 'block';
+            if (sidebar) sidebar.style.display = 'none';
+            if (headerControls) headerControls.style.display = 'none';
+
+            if (mainContent) {
+                mainContent.innerHTML =
+                    '<div class="login-container" id="login-container">' +
+                        '<h2 style="text-align: center; margin-bottom: 1.5rem;">Admin Login</h2>' +
+                        '<div class="form-group">' +
+                            '<label for="email">Email</label>' +
+                            '<input type="email" id="email" placeholder="Enter your email">' +
+                        '</div>' +
+                        '<div class="form-group">' +
+                            '<label for="password">Password</label>' +
+                            '<input type="password" id="password" placeholder="Enter your password">' +
+                        '</div>' +
+                        '<button class="btn btn-primary" onclick="login()" style="width: 100%;">Login</button>' +
+                        '<div id="login-error" class="error-message"></div>' +
+                    '</div>';
+            }
+
+            // Hide menu toggle on login screen
             if (menuToggle) {
                 menuToggle.style.display = 'none';
             }
@@ -943,28 +961,62 @@
         
         // API functions
         async function apiRequest(endpoint, options = {}) {
+            console.log('🔄 API REQUEST:', API_BASE_URL + endpoint);
+            console.log('🔑 Auth token present:', !!authToken);
+            console.log('📝 Request options:', options);
+
             const defaultOptions = {
                 headers: {
                     'Content-Type': 'application/json',
                     ...(authToken && { 'Authorization': 'Bearer ' + authToken }),
                 },
             };
-            
-            const response = await fetch(API_BASE_URL + endpoint, {
-                ...defaultOptions,
-                ...options,
-            });
-            
-            if (!response.ok) {
-                if (response.status === 401) {
-                    logout();
-                    throw new Error('Unauthorized');
+
+            console.log('📋 Final headers:', defaultOptions.headers);
+
+            try {
+                console.log('🚀 Making fetch request...');
+                const response = await fetch(API_BASE_URL + endpoint, {
+                    ...defaultOptions,
+                    ...options,
+                });
+
+                console.log('📊 Response status:', response.status);
+                console.log('📊 Response headers:', Object.fromEntries(response.headers.entries()));
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        console.log('🚫 Unauthorized - logging out');
+                        logout();
+                        throw new Error('Unauthorized - please login again');
+                    }
+
+                    const errorText = await response.text();
+                    console.error('❌ API error response:', errorText);
+
+                    let errorMessage = 'Request failed';
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.error || errorMessage;
+                    } catch (e) {
+                        errorMessage = errorText || errorMessage;
+                    }
+
+                    throw new Error(`API Error ${response.status}: ${errorMessage}`);
                 }
-                const error = await response.json();
-                throw new Error(error.error || 'Request failed');
+
+                console.log('✅ Response OK, parsing JSON...');
+                const data = await response.json();
+                console.log('📦 Parsed data:', data);
+                console.log('📦 Data type:', typeof data);
+                console.log('📦 Data is array:', Array.isArray(data));
+
+                return data;
+            } catch (error) {
+                console.error('💥 API request failed:', error);
+                console.error('💥 Error stack:', error.stack);
+                throw error;
             }
-            
-            return await response.json();
         }
         
         // UI Functions
@@ -977,82 +1029,167 @@
         }
         
         async function loadDashboard() {
-            showLoading();
-            
+            console.log('Loading dashboard...');
+
             try {
-                // Fetch actual stats
-                const pendingDonations = await apiRequest('/donations/status/pending');
-                const pendingWithdrawals = await apiRequest('/withdrawals/status/pending');
-                // For now, we'll simulate with mock data for other stats
-                const totalDonations = pendingDonations.length + 10; // Mock total
-                const pendingCount = pendingDonations.length;
-                const pendingWithdrawalsCount = pendingWithdrawals.length;
-                const totalCredits = 5000; // Mock total credits
-                
-                document.getElementById('main-content').innerHTML = 
+                // Fetch real data from APIs
+                const [pendingDonations, approvedDonations, rejectedDonations, pendingWithdrawals] = await Promise.all([
+                    apiRequest('/donations/status/pending').catch(() => []),
+                    apiRequest('/donations/status/approved').catch(() => []),
+                    apiRequest('/donations/status/rejected').catch(() => []),
+                    apiRequest('/withdrawals/status/pending').catch(() => [])
+                ]);
+
+                console.log('Dashboard data:', {
+                    pendingDonations: pendingDonations.length,
+                    approvedDonations: approvedDonations.length,
+                    rejectedDonations: rejectedDonations.length,
+                    pendingWithdrawals: pendingWithdrawals.length
+                });
+
+                const totalDonations = pendingDonations.length + approvedDonations.length + rejectedDonations.length;
+                const totalCredits = approvedDonations.reduce((sum, donation) => sum + (donation.credits || 0), 0);
+
+                const mainContent = document.getElementById('main-content');
+                if (!mainContent) return;
+
+                mainContent.innerHTML =
                     '<div class="stats-container">' +
-                        '<div class="stat-card">' +
-                            '<h3>Total Donations</h3>' +
-                            '<div class="value">' + totalDonations + '</div>' +
+                        '<div class="stat-card" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;">' +
+                            '<h3 style="color:white;">Total Donations</h3>' +
+                            '<div class="value" style="font-size:2rem;font-weight:bold;">' + totalDonations + '</div>' +
                         '</div>' +
-                        '<div class="stat-card">' +
-                            '<h3>Pending Approval</h3>' +
-                            '<div class="value">' + pendingCount + '</div>' +
+                        '<div class="stat-card" style="background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);color:white;">' +
+                            '<h3 style="color:white;">Pending Approval</h3>' +
+                            '<div class="value" style="font-size:2rem;font-weight:bold;">' + pendingDonations.length + '</div>' +
                         '</div>' +
-                        '<div class="stat-card">' +
-                            '<h3>Pending Withdrawals</h3>' +
-                            '<div class="value">' + pendingWithdrawalsCount + '</div>' +
+                        '<div class="stat-card" style="background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);color:white;">' +
+                            '<h3 style="color:white;">Approved</h3>' +
+                            '<div class="value" style="font-size:2rem;font-weight:bold;">' + approvedDonations.length + '</div>' +
                         '</div>' +
-                        '<div class="stat-card">' +
-                            '<h3>Total Credits</h3>' +
-                            '<div class="value">' + totalCredits + '</div>' +
+                        '<div class="stat-card" style="background:linear-gradient(135deg,#43e97b 0%,#38f9d7 100%);color:white;">' +
+                            '<h3 style="color:white;">Total Credits</h3>' +
+                            '<div class="value" style="font-size:2rem;font-weight:bold;">' + totalCredits + '</div>' +
                         '</div>' +
                     '</div>' +
-                    
-                    '<div class="pending-donations">' +
-                        '<h2>' +
-                            'Pending Donations' +
-                            '<button class="refresh-btn" onclick="loadPendingDonations()">' +
-                                '<i class="fas fa-sync-alt"></i> Refresh' +
-                            '</button>' +
-                        '</h2>' +
-                        '<div id="pending-donations-list">' +
-                            renderDonationList(pendingDonations) +
-                        '</div>' +
+
+                    '<div class="pending-donations" style="margin-top:20px;">' +
+                        '<h2>Recent Pending Donations' +
+                        '<button class="refresh-btn" onclick="loadDashboard()">' +
+                        '<i class="fas fa-sync-alt"></i> Refresh</button></h2>' +
+
+                        (pendingDonations.length > 0 ?
+                            '<div style="overflow-x:auto;">' +
+                                '<table style="width:100%;border-collapse:collapse;background:white;">' +
+                                '<thead><tr style="background:#F59E0B;color:white;">' +
+                                '<th style="padding:10px;text-align:left;">User</th>' +
+                                '<th style="padding:10px;text-align:left;">Title</th>' +
+                                '<th style="padding:10px;text-align:left;">Type</th>' +
+                                '<th style="padding:10px;text-align:center;">Credits</th>' +
+                                '<th style="padding:10px;text-align:center;">Actions</th>' +
+                                '</tr></thead><tbody>' +
+
+                                pendingDonations.slice(0, 5).map(donation =>
+                                    '<tr style="border-bottom:1px solid #eee;">' +
+                                    '<td style="padding:10px;">' + (donation.user?.name || 'Unknown') + '</td>' +
+                                    '<td style="padding:10px;">' + (donation.title || 'No Title') + '</td>' +
+                                    '<td style="padding:10px;">' + (donation.type || 'Unknown') + '</td>' +
+                                    '<td style="padding:10px;text-align:center;">' + (donation.credits || 0) + '</td>' +
+                                    '<td style="padding:10px;text-align:center;">' +
+                                        '<button class="btn-action" onclick="approveDonation(\'' + donation.id + '\')" style="padding:4px 8px;background:#10B981;color:white;border:none;border-radius:3px;cursor:pointer;margin-right:3px;">✓</button>' +
+                                        '<button class="btn-action" onclick="rejectDonation(\'' + donation.id + '\')" style="padding:4px 8px;background:#EF4444;color:white;border:none;border-radius:3px;cursor:pointer;">✗</button>' +
+                                    '</td>' +
+                                    '</tr>'
+                                ).join('') +
+
+                                '</tbody></table></div>' +
+
+                                (pendingDonations.length > 5 ?
+                                    '<p style="text-align:center;margin-top:10px;color:#666;">... and ' + (pendingDonations.length - 5) + ' more pending donations</p>' : ''
+                                )
+                            :
+                            '<div class="empty-state"><p>No pending donations</p></div>'
+                        ) +
                     '</div>';
+
+                console.log('✅ Dashboard loaded successfully');
+
             } catch (error) {
-                document.getElementById('main-content').innerHTML = 
-                    '<div class="empty-state">' +
-                        '<p>Error loading dashboard: ' + error.message + '</p>' +
-                    '</div>';
+                console.error('❌ Error loading dashboard:', error);
+                const mainContent = document.getElementById('main-content');
+                if (mainContent) {
+                    mainContent.innerHTML =
+                        '<div class="empty-state" style="color:red;padding:20px;">' +
+                        '<h3>Error loading dashboard:</h3>' +
+                        '<p>' + error.message + '</p>' +
+                        '<button onclick="loadDashboard()">Retry</button>' +
+                        '</div>';
+                }
             }
         }
         
         async function loadPendingDonations() {
-            showLoading();
-            
+            console.log('Loading pending donations...');
+
             try {
                 const donations = await apiRequest('/donations/status/pending');
-                document.getElementById('main-content').innerHTML = 
-                    '<div class="pending-donations">' +
-                        '<h2>' +
-                            'Pending Donations' +
-                            '<button class="refresh-btn" onclick="loadPendingDonations()">' +
-                                '<i class="fas fa-sync-alt"></i> Refresh' +
-                            '</button>' +
-                        '</h2>' +
-                        '<div id="pending-donations-list">' +
-                            (donations.length > 0 ? renderDonationList(donations) : 
-                                '<div class="empty-state">' +
-                                    '<p>No pending donations</p>' +
-                                '</div>') +
-                        '</div>' +
-                    '</div>';
+                console.log('Pending donations loaded:', donations);
+
+                const mainContent = document.getElementById('main-content');
+                if (!mainContent) return;
+
+                let contentHtml = '<div class="pending-donations">' +
+                    '<h2>Pending Donations (' + donations.length + ')' +
+                    '<button class="refresh-btn" onclick="loadPendingDonations()">' +
+                    '<i class="fas fa-sync-alt"></i> Refresh</button></h2>';
+
+                if (donations.length === 0) {
+                    contentHtml += '<div class="empty-state"><p>No pending donations</p></div>';
+                } else {
+                    contentHtml += '<div style="overflow-x:auto;">' +
+                        '<table style="width:100%;border-collapse:collapse;background:white;">' +
+                        '<thead><tr style="background:#F59E0B;color:white;">' +
+                        '<th style="padding:12px;text-align:left;">User</th>' +
+                        '<th style="padding:12px;text-align:left;">Title</th>' +
+                        '<th style="padding:12px;text-align:left;">Type</th>' +
+                        '<th style="padding:12px;text-align:center;">Credits</th>' +
+                        '<th style="padding:12px;text-align:center;">Date</th>' +
+                        '<th style="padding:12px;text-align:center;">Actions</th>' +
+                        '</tr></thead><tbody>';
+
+                    donations.forEach(donation => {
+                        console.log('Processing donation:', donation);
+                        contentHtml += '<tr style="border-bottom:1px solid #eee;">' +
+                            '<td style="padding:12px;">' + (donation.user?.name || 'Unknown') + '</td>' +
+                            '<td style="padding:12px;">' + (donation.title || 'No Title') + '</td>' +
+                            '<td style="padding:12px;">' + (donation.type || 'Unknown') + '</td>' +
+                            '<td style="padding:12px;text-align:center;">' + (donation.credits || 0) + '</td>' +
+                            '<td style="padding:12px;text-align:center;">' + (donation.date || 'No Date') + '</td>' +
+                            '<td style="padding:12px;text-align:center;">' +
+                                '<button class="btn-action btn-approve" onclick="approveDonation(\'' + donation.id + '\')" style="padding:6px 12px;background:#10B981;color:white;border:none;border-radius:4px;cursor:pointer;margin-right:5px;">Approve</button>' +
+                                '<button class="btn-action btn-reject" onclick="rejectDonation(\'' + donation.id + '\')" style="padding:6px 12px;background:#EF4444;color:white;border:none;border-radius:4px;cursor:pointer;">Reject</button>' +
+                            '</td>' +
+                            '</tr>';
+                    });
+
+                    contentHtml += '</tbody></table></div>';
+                }
+
+                contentHtml += '</div>';
+                mainContent.innerHTML = contentHtml;
+                console.log('✅ Pending donations displayed successfully');
+
             } catch (error) {
-                document.getElementById('main-content').innerHTML = 
-                    '<div class="empty-state">' +
-                        '<p>Error loading pending donations: ' + error.message + '</p>' +
-                    '</div>';
+                console.error('❌ Error loading pending donations:', error);
+                const mainContent = document.getElementById('main-content');
+                if (mainContent) {
+                    mainContent.innerHTML =
+                        '<div class="empty-state" style="color:red;padding:20px;">' +
+                        '<h3>Error loading donations:</h3>' +
+                        '<p>' + error.message + '</p>' +
+                        '<button onclick="loadPendingDonations()">Retry</button>' +
+                        '</div>';
+                }
             }
         }
         
@@ -1141,31 +1278,121 @@
         }
         
         async function loadUsers() {
-            showLoading();
-            
-            try {
-                const users = await apiRequest('/users');
-                document.getElementById('main-content').innerHTML = 
-                    '<div class="pending-donations">' +
-                        '<h2>' +
-                            'Users Management (' + users.length + ')' +
-                            '<button class="refresh-btn" onclick="loadUsers()">' +
-                                '<i class="fas fa-sync-alt"></i> Refresh' +
-                            '</button>' +
-                        '</h2>' +
-                        '<div class="users-list">' +
-                            (users.length > 0 ? renderUsersList(users) : 
-                                '<div class="empty-state">' +
-                                    '<p>No users found</p>' +
-                                '</div>') +
-                        '</div>' +
-                    '</div>';
-            } catch (error) {
-                document.getElementById('main-content').innerHTML = 
-                    '<div class="empty-state">' +
-                        '<p>Error loading users: ' + error.message + '</p>' +
-                    '</div>';
+            console.log('=== LOADUSERS FUNCTION STARTED ===');
+
+            const mainContent = document.getElementById('main-content');
+            if (!mainContent) {
+                console.error('ERROR: main-content element not found!');
+                return;
             }
+
+            console.log('Setting loading state...');
+            mainContent.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading users...</p></div>';
+
+            // First, let's test the API directly without authentication
+            console.log('Testing API without authentication...');
+            try {
+                const directResponse = await fetch(API_BASE_URL + '/users');
+                console.log('Direct API response status:', directResponse.status);
+
+                if (directResponse.status === 401) {
+                    console.log('Authentication required - this is expected');
+                    mainContent.innerHTML =
+                        '<div class="empty-state" style="color:orange;padding:20px;text-align:center;">' +
+                        '<h3>🔐 Authentication Required</h3>' +
+                        '<p>The admin user needs to be created in the database.</p>' +
+                        '<div style="background:#f0f0f0;padding:15px;margin:15px 0;border-radius:5px;">' +
+                        '<strong>To fix this, run:</strong><br>' +
+                        '<code style="background:#fff;padding:10px;display:block;margin:10px 0;">node backend/configure-admin.js</code>' +
+                        '</div>' +
+                        '<p><strong>Then refresh this page and login again.</strong></p>' +
+                        '<button onclick="location.reload()" style="padding:10px;margin:10px;">Refresh Page</button>' +
+                        '</div>';
+                    return;
+                }
+
+                if (!directResponse.ok) {
+                    throw new Error('Direct API test failed');
+                }
+
+                const users = await directResponse.json();
+                console.log('Direct API success! Users:', users);
+
+                // If we get here, API works - now try with authentication
+                const usersWithAuth = await apiRequest('/users');
+                console.log('Authenticated API success! Users:', usersWithAuth);
+
+                // Build the users table
+                let contentHtml = '<div class="pending-donations">' +
+                    '<h2>Users Management (' + usersWithAuth.length + ')' +
+                    '<button class="refresh-btn" onclick="loadUsers()">' +
+                    '<i class="fas fa-sync-alt"></i> Refresh</button></h2>';
+
+                if (usersWithAuth.length === 0) {
+                    contentHtml += '<div class="empty-state"><p>No users found</p></div>';
+                } else {
+                    contentHtml += '<div style="overflow-x:auto;margin-top:20px;">' +
+                        '<table style="width:100%;border-collapse:collapse;background:white;">' +
+                        '<thead><tr style="background:#6C63FF;color:white;">' +
+                        '<th style="padding:12px;text-align:left;">Name</th>' +
+                        '<th style="padding:12px;text-align:left;">Email</th>' +
+                        '<th style="padding:12px;text-align:left;">Phone</th>' +
+                        '<th style="padding:12px;text-align:center;">Donations</th>' +
+                        '<th style="padding:12px;text-align:center;">Credits</th>' +
+                        '<th style="padding:12px;text-align:center;">Actions</th>' +
+                        '</tr></thead><tbody>';
+
+                    usersWithAuth.forEach((user, index) => {
+                        console.log('Rendering user', index, ':', user);
+                        contentHtml += '<tr style="border-bottom:1px solid #eee;">' +
+                            '<td style="padding:12px;">' + (user.name || 'No Name') + '</td>' +
+                            '<td style="padding:12px;">' + (user.email || 'No Email') + '</td>' +
+                            '<td style="padding:12px;">' + (user.phone || 'No Phone') + '</td>' +
+                            '<td style="padding:12px;text-align:center;">' + (user.totalDonations || 0) + '</td>' +
+                            '<td style="padding:12px;text-align:center;">' + (user.totalCredits || 0) + '</td>' +
+                            '<td style="padding:12px;text-align:center;"><button class="btn-action btn-view" onclick="viewUserDetails(\'' + (user.id || '') + '\')" style="padding:6px 12px;background:#6C63FF;color:white;border:none;border-radius:4px;cursor:pointer;">View</button></td>' +
+                            '</tr>';
+                    });
+
+                    contentHtml += '</tbody></table></div>';
+                }
+
+                contentHtml += '</div>';
+                mainContent.innerHTML = contentHtml;
+                console.log('✅ Users loaded and displayed successfully!');
+
+            } catch (error) {
+                console.error('❌ Error in loadUsers:', error);
+
+                if (error.message.includes('Unauthorized')) {
+                    mainContent.innerHTML =
+                        '<div class="empty-state" style="color:orange;padding:20px;text-align:center;">' +
+                        '<h3>🔐 Admin User Not Found</h3>' +
+                        '<p>You need to create the admin user in the database first.</p>' +
+                        '<div style="background:#fff;padding:15px;margin:15px 0;border-radius:5px;border:1px solid #ddd;">' +
+                        '<strong>Run this command in your terminal:</strong><br>' +
+                        '<code style="background:#f0f0f0;padding:10px;display:block;margin:10px 0;">node backend/configure-admin.js</code>' +
+                        '</div>' +
+                        '<p><strong>Then:</strong></p>' +
+                        '<ol style="text-align:left;display:inline-block;">' +
+                        '<li>Refresh this page</li>' +
+                        '<li>Login with: admin@donaro.com / Admin@123</li>' +
+                        '<li>Click on "Users" again</li>' +
+                        '</ol>' +
+                        '<button onclick="location.reload()" style="padding:10px;margin:10px;">Refresh & Try Again</button>' +
+                        '</div>';
+                } else {
+                    mainContent.innerHTML =
+                        '<div class="empty-state" style="color:red;padding:20px;">' +
+                        '<h3>❌ Error Loading Users</h3>' +
+                        '<p>' + error.message + '</p>' +
+                        '<button onclick="loadUsers()" style="padding:10px;margin:10px;">Retry</button>' +
+                        '<button onclick="testAllAPIs()" style="padding:10px;margin:10px;">Test APIs</button>' +
+                        '</div>';
+                }
+            }
+
+            console.log('=== LOADUSERS FUNCTION ENDED ===');
         }
         
         async function loadReports() {
@@ -1370,75 +1597,107 @@
         }
         
         function renderUsersList(users) {
-            if (users.length === 0) {
-                return 
-                    '<div class="empty-state">' +
-                        '<p>No users found</p>' +
-                    '</div>';
+            console.log('Rendering users list:', users);
+            console.log('Users length:', users ? users.length : 'users is null');
+
+            if (!users || users.length === 0) {
+                return '<div class="empty-state"><p>No users found</p></div>';
             }
-            
-            return 
-                '<div class="users-table-container">' +
-                    '<table class="users-table">' +
-                        '<thead>' +
-                            '<tr>' +
-                                '<th>Name</th>' +
-                                '<th>Email</th>' +
-                                '<th>Phone</th>' +
-                                '<th>Total Donations</th>' +
-                                '<th>Total Credits</th>' +
-                                '<th>Actions</th>' +
-                            '</tr>' +
-                        '</thead>' +
-                        '<tbody>' +
-                            users.map(user => 
-                                '<tr>' +
-                                    '<td>' + (user.name || '') + '</td>' +
-                                    '<td>' + (user.email || '') + '</td>' +
-                                    '<td>' + (user.phone || '') + '</td>' +
-                                    '<td>' + (user.totalDonations || 0) + '</td>' +
-                                    '<td>' + (user.totalCredits || 0) + ' credits</td>' +
-                                    '<td>' +
-                                        '<button class="btn-action btn-view" onclick="viewUserDetails(\'' + user.id + '\')">View</button>' +
-                                    '</td>' +
-                                '</tr>'
-                            ).join('') +
-                        '</tbody>' +
-                    '</table>' +
-                '</div>';
+
+            const tableRows = users.map(user => {
+                console.log('Rendering user:', user);
+                return '<tr>' +
+                    '<td>' + (user.name || 'N/A') + '</td>' +
+                    '<td>' + (user.email || 'N/A') + '</td>' +
+                    '<td>' + (user.phone || 'N/A') + '</td>' +
+                    '<td>' + (user.totalDonations || 0) + '</td>' +
+                    '<td>' + (user.totalCredits || 0) + ' credits</td>' +
+                    '<td>' +
+                        '<button class="btn-action btn-view" onclick="viewUserDetails(\'' + (user.id || '') + '\')">View</button>' +
+                    '</td>' +
+                '</tr>';
+            }).join('');
+
+            console.log('Generated table rows:', tableRows);
+
+            return '<div class="users-table-container">' +
+                '<table class="users-table">' +
+                    '<thead>' +
+                        '<tr>' +
+                            '<th>Name</th>' +
+                            '<th>Email</th>' +
+                            '<th>Phone</th>' +
+                            '<th>Total Donations</th>' +
+                            '<th>Total Credits</th>' +
+                            '<th>Actions</th>' +
+                        '</tr>' +
+                    '</thead>' +
+                    '<tbody>' +
+                        tableRows +
+                    '</tbody>' +
+                '</table>' +
+            '</div>';
         }
         
         async function approveDonation(donationId) {
+            console.log('Approving donation:', donationId);
+
             if (confirm('Are you sure you want to approve this donation?')) {
                 try {
-                    await apiRequest('/donations/' + donationId + '/status', {
+                    const result = await apiRequest('/donations/' + donationId + '/status', {
                         method: 'PUT',
                         body: JSON.stringify({ status: 'approved' }),
                     });
-                    
-                    refreshCurrentView();
-                    showToast('Donation approved successfully!', 'success');
+
+                    console.log('Donation approved:', result);
+                    showToast('✅ Donation approved successfully! User received ' + (result.credits || 0) + ' credits.', 'success');
+
+                    // Refresh current view after a short delay
+                    setTimeout(() => {
+                        const activeItem = document.querySelector('.sidebar li.active');
+                        if (activeItem) {
+                            const text = activeItem.textContent.trim();
+                            if (text === 'Pending Donations') loadPendingDonations();
+                            else if (text === 'Approved Donations') loadApprovedDonations();
+                            else if (text === 'Dashboard') loadDashboard();
+                        }
+                    }, 1000);
+
                 } catch (error) {
-                    showToast('Error approving donation: ' + error.message, 'error');
+                    console.error('Error approving donation:', error);
+                    showToast('❌ Error approving donation: ' + error.message, 'error');
                 }
             }
         }
-        
+
         async function rejectDonation(donationId) {
-            if (confirm('Are you sure you want to reject this donation?')) {
-                const reason = prompt('Please provide a reason for rejection:');
-                if (reason) {
-                    try {
-                        await apiRequest('/donations/' + donationId + '/status', {
-                            method: 'PUT',
-                            body: JSON.stringify({ status: 'rejected' }),
-                        });
-                        
-                        refreshCurrentView();
-                        showToast('Donation rejected successfully!', 'success');
-                    } catch (error) {
-                        showToast('Error rejecting donation: ' + error.message, 'error');
-                    }
+            console.log('Rejecting donation:', donationId);
+
+            const reason = prompt('Please provide a reason for rejection (optional):');
+            if (reason !== null) { // Allow empty reason
+                try {
+                    const result = await apiRequest('/donations/' + donationId + '/status', {
+                        method: 'PUT',
+                        body: JSON.stringify({ status: 'rejected' }),
+                    });
+
+                    console.log('Donation rejected:', result);
+                    showToast('❌ Donation rejected successfully!', 'success');
+
+                    // Refresh current view after a short delay
+                    setTimeout(() => {
+                        const activeItem = document.querySelector('.sidebar li.active');
+                        if (activeItem) {
+                            const text = activeItem.textContent.trim();
+                            if (text === 'Pending Donations') loadPendingDonations();
+                            else if (text === 'Rejected Donations') loadRejectedDonations();
+                            else if (text === 'Dashboard') loadDashboard();
+                        }
+                    }, 1000);
+
+                } catch (error) {
+                    console.error('Error rejecting donation:', error);
+                    showToast('❌ Error rejecting donation: ' + error.message, 'error');
                 }
             }
         }
@@ -1608,21 +1867,21 @@
             if (existingToast) {
                 existingToast.remove();
             }
-            
+
             // Create toast element
             const toast = document.createElement('div');
             toast.className = 'toast ' + (type || 'info');
             toast.textContent = message;
             toast.id = 'toast-notification';
-            
+
             // Add to document
             document.body.appendChild(toast);
-            
+
             // Show toast
             setTimeout(() => {
                 toast.classList.add('show');
             }, 100);
-            
+
             // Hide toast after 3 seconds
             setTimeout(() => {
                 toast.classList.remove('show');
@@ -1633,6 +1892,50 @@
                 }, 300);
             }, 3000);
         }
+
+        // API Test function (for debugging)
+        async function testAllAPIs() {
+            console.log('🧪 TESTING ALL APIs...');
+
+            const endpoints = [
+                { name: 'Health Check', endpoint: '/health', method: 'GET' },
+                { name: 'Users List', endpoint: '/users', method: 'GET' },
+                { name: 'Pending Donations', endpoint: '/donations/status/pending', method: 'GET' },
+                { name: 'Approved Donations', endpoint: '/donations/status/approved', method: 'GET' },
+                { name: 'Pending Withdrawals', endpoint: '/withdrawals/status/pending', method: 'GET' }
+            ];
+
+            for (const test of endpoints) {
+                try {
+                    console.log(`\n🔍 Testing ${test.name}...`);
+                    const response = await fetch(API_BASE_URL + test.endpoint, {
+                        method: test.method,
+                        headers: authToken ? {
+                            'Authorization': 'Bearer ' + authToken,
+                            'Content-Type': 'application/json'
+                        } : { 'Content-Type': 'application/json' }
+                    });
+
+                    console.log(`✅ ${test.name}: Status ${response.status}`);
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log(`📦 ${test.name}: Data received (${Array.isArray(data) ? data.length : 'N/A'} items)`);
+                    } else {
+                        console.error(`❌ ${test.name}: Failed with status ${response.status}`);
+                        const errorText = await response.text();
+                        console.error(`❌ Error: ${errorText}`);
+                    }
+                } catch (error) {
+                    console.error(`💥 ${test.name}: Exception - ${error.message}`);
+                }
+            }
+
+            showToast('API tests completed - check console for results', 'info');
+        }
+
+        // Make testAllAPIs available globally for console testing
+        window.testAllAPIs = testAllAPIs;
     </script>
 </body>
 </html>

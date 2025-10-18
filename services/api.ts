@@ -1,5 +1,5 @@
 // Real API service connecting to backend with Prisma
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Validate URL to prevent SSRF
 const isValidUrl = (url: string): boolean => {
@@ -13,6 +13,11 @@ const isValidUrl = (url: string): boolean => {
 
     // Allow localhost for development
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return true;
+    }
+
+    // Allow IP addresses for development
+    if (hostname.match(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/)) {
       return true;
     }
 
@@ -120,7 +125,7 @@ class ApiService {
     // Initialize socket connection when token is set (only if not Vercel deployment)
     if (token && !this.socket) {
       // Check if we're running against a Vercel deployment
-      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
       const isVercelDeployment = API_URL.includes('.vercel.app');
 
       if (!isVercelDeployment) {
@@ -135,7 +140,7 @@ class ApiService {
     if (!this.token) return;
 
     // Check if we're running against a Vercel deployment (Socket.IO not supported)
-    const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+    const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
     const isVercelDeployment = API_URL.includes('.vercel.app');
 
     if (isVercelDeployment) {
