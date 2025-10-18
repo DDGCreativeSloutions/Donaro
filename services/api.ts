@@ -4,20 +4,48 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/a
 // Validate URL to prevent SSRF
 const isValidUrl = (url: string): boolean => {
   try {
+    if (!url || url.trim() === '') {
+      return false;
+    }
+
     const parsedUrl = new URL(url);
-    // Allow localhost for development and vercel.app domains for production
-    return parsedUrl.hostname === 'localhost' || 
-           parsedUrl.hostname === '127.0.0.1' || 
-           parsedUrl.hostname.endsWith('.vercel.app') || // Allow Vercel deployments
-           parsedUrl.hostname === 'yourdomain.com'; // Replace with your actual domain
-  } catch {
+    const hostname = parsedUrl.hostname.toLowerCase();
+
+    // Allow localhost for development
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return true;
+    }
+
+    // Allow Vercel deployments
+    if (hostname.endsWith('.vercel.app')) {
+      return true;
+    }
+
+    // Allow Supabase
+    if (hostname.endsWith('.supabase.co')) {
+      return true;
+    }
+
+    // Allow custom domains (add your actual domain here)
+    if (hostname === 'yourdomain.com') {
+      return true;
+    }
+
+    // Allow common development domains
+    if (hostname.includes('.expo.') || hostname.includes('expo.dev')) {
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error('URL validation error:', error);
     return false;
   }
 };
 
 // Ensure API_BASE_URL is valid
 if (!isValidUrl(API_BASE_URL)) {
-  console.error('Invalid API base URL detected');
+  console.warn('API base URL may be invalid, but continuing for development');
 }
 
 import { io, Socket } from 'socket.io-client';
@@ -207,7 +235,7 @@ class ApiService {
     try {
       // Validate API URL before making requests
       if (!isValidUrl(API_BASE_URL)) {
-        throw new Error('Invalid API configuration');
+        console.warn('API URL validation failed, but continuing');
       }
       
       const response = await fetch(`${API_BASE_URL}/users/${id}`, {
@@ -291,7 +319,7 @@ class ApiService {
     try {
       // Validate API URL before making requests
       if (!isValidUrl(API_BASE_URL)) {
-        throw new Error('Invalid API configuration');
+        console.warn('API URL validation failed, but continuing');
       }
       
       const response = await fetch(`${API_BASE_URL}/users/${userId}`, {

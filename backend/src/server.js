@@ -18,8 +18,36 @@ const isVercel = process.env.NOW_REGION || process.env.VERCEL;
 // Middleware
 // For mobile apps, we allow all origins since mobile apps don't have the same origin restrictions as web browsers
 app.use(cors({
-  origin: "*", // Allow all origins for mobile app compatibility
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+
+    // Allow localhost for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+
+    // Allow Expo development tools
+    if (origin.includes('.expo.') || origin.includes('expo.dev')) {
+      return callback(null, true);
+    }
+
+    // Allow Vercel deployments
+    if (origin.includes('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    // Allow Supabase
+    if (origin.includes('.supabase.co')) {
+      return callback(null, true);
+    }
+
+    // Reject other origins
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
