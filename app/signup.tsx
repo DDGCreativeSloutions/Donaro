@@ -25,7 +25,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://donaro-producti
 // EmailJS Configuration - Replace with your actual credentials
 const EMAILJS_CONFIG = {
   SERVICE_ID: 'service_undmw4c',     // Updated EmailJS service ID
-  TEMPLATE_ID: 'template_oe1jicm',   // Get from EmailJS dashboard
+  TEMPLATE_ID: 'template_mkx7s1d',   // Updated EmailJS template ID
   PUBLIC_KEY: 'bpWDQy63wlpfsWHk7'      // Get from EmailJS dashboard
 };
 
@@ -154,6 +154,15 @@ const SignupScreen = () => {
 
         // Send email using EmailJS
         try {
+          console.log('EmailJS Signup Debug Info:', {
+            serviceId: EMAILJS_CONFIG.SERVICE_ID,
+            templateId: EMAILJS_CONFIG.TEMPLATE_ID,
+            toEmail: email,
+            otpCode: otpCode,
+            userName: fullName,
+            publicKey: EMAILJS_CONFIG.PUBLIC_KEY
+          });
+
           await emailjs.send(
             EMAILJS_CONFIG.SERVICE_ID,
             EMAILJS_CONFIG.TEMPLATE_ID,
@@ -181,29 +190,25 @@ const SignupScreen = () => {
           // Check if it's a Gmail authentication error
           if (emailError.text && emailError.text.includes('Invalid grant')) {
             Alert.alert(
-              'Email Configuration Error',
-              'Gmail account needs to be reconnected in EmailJS dashboard. Please contact support or use the OTP shown in console for testing.',
+              'Email Service Error',
+              'Email service needs reconfiguration. Please contact support.',
               [
                 { text: 'OK' }
               ]
             );
           } else {
             Alert.alert(
-              'Email Error',
-              'OTP generated but email sending failed. Please use the OTP shown in console or try again.'
+              'Email Service Issue',
+              'We\'re having trouble sending the verification email. Please try again in a few minutes or contact support.',
+              [
+                { text: 'Try Again', onPress: () => handleSignup() },
+                { text: 'Continue Anyway', onPress: () => router.push({
+                  pathname: '/otp-verification',
+                  params: { fullName, email, phone, password }
+                })}
+              ]
             );
           }
-
-          // Still navigate to OTP screen for testing purposes
-          router.push({
-            pathname: '/otp-verification',
-            params: {
-              fullName,
-              email,
-              phone,
-              password,
-            }
-          });
         }
       } else {
         Alert.alert('Error', result.error || 'Failed to generate OTP. Please try again.');

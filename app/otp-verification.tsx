@@ -9,12 +9,12 @@ import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'reac
 import emailjs from '@emailjs/browser';
 
 // Get API base URL from environment variables
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://donaro-production.up.railway.app/api';
 
 // EmailJS Configuration - Replace with your actual credentials
 const EMAILJS_CONFIG = {
   SERVICE_ID: 'service_undmw4c',     // Updated EmailJS service ID
-  TEMPLATE_ID: 'template_oe1jicm',   // Get from EmailJS dashboard
+  TEMPLATE_ID: 'template_mkx7s1d',   // Updated EmailJS template ID
   PUBLIC_KEY: 'bpWDQy63wlpfsWHk7'      // Get from EmailJS dashboard
 };
 
@@ -219,6 +219,15 @@ const OTPVerificationScreen = () => {
 
         // Send email using EmailJS
         try {
+          console.log('EmailJS Debug Info:', {
+            serviceId: EMAILJS_CONFIG.SERVICE_ID,
+            templateId: EMAILJS_CONFIG.TEMPLATE_ID,
+            toEmail: email,
+            otpCode: newOtpCode,
+            userName: fullName,
+            publicKey: EMAILJS_CONFIG.PUBLIC_KEY
+          });
+
           await emailjs.send(
             EMAILJS_CONFIG.SERVICE_ID,
             EMAILJS_CONFIG.TEMPLATE_ID,
@@ -232,12 +241,33 @@ const OTPVerificationScreen = () => {
 
           Alert.alert('Success', 'New OTP has been sent to your email address.');
           setTimer(30); // Reset timer
-        } catch (emailError) {
-          console.error('EmailJS resend error:', emailError);
-          Alert.alert(
-            'Email Error',
-            'OTP generated but email sending failed. Please use the OTP shown in console or try again.'
-          );
+        } catch (emailError: any) {
+          console.error('EmailJS Debug Info:', {
+            error: emailError,
+            serviceId: EMAILJS_CONFIG.SERVICE_ID,
+            templateId: EMAILJS_CONFIG.TEMPLATE_ID,
+            errorText: emailError?.text || 'No error text'
+          });
+
+          // More specific error diagnosis
+          if (emailError.text && emailError.text.includes('Invalid grant')) {
+            Alert.alert(
+              'Gmail Authentication Error',
+              'Your Gmail account needs to be reconnected in EmailJS. Please update your EmailJS template and reconnect Gmail.',
+              [
+                { text: 'OK' }
+              ]
+            );
+          } else {
+            Alert.alert(
+              'EmailJS Configuration Issue',
+              'Template variable error. Check EmailJS dashboard - use {{otp}} not ${otp}. Service ID: service_undmw4c, Template ID: template_oe1jicm',
+              [
+                { text: 'Try Again', onPress: () => handleResendOTP() },
+                { text: 'OK' }
+              ]
+            );
+          }
           setTimer(30);
         }
       } else {
