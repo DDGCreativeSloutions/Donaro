@@ -4,7 +4,7 @@ const rateLimit = require('express-rate-limit');
 const { authenticateToken } = require('../utils/authMiddleware');
 
 // MailerSend email sending function for Railway compatibility
-async function sendEmail(to, subject, htmlContent) {
+async function sendEmail(to, subject, htmlContent, otp = null) {
   try {
     // Check if MailerSend is configured
     if (!process.env.MAILERSEND_API_KEY) {
@@ -21,12 +21,11 @@ async function sendEmail(to, subject, htmlContent) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
         'Authorization': `Bearer ${process.env.MAILERSEND_API_KEY}`,
       },
       body: JSON.stringify({
         from: {
-          email: process.env.FROM_EMAIL || 'noreply@donaro.app',
+          email: process.env.FROM_EMAIL || 'noreply@test-pzkmgq7xdkml059v.mlsender.net',
           name: 'Donaro App'
         },
         to: [
@@ -37,16 +36,20 @@ async function sendEmail(to, subject, htmlContent) {
         ],
         subject: subject,
         html: htmlContent,
-        text: `Hello! Your OTP for Donaro verification is included in the email. Please check the HTML version for the complete message.`
+        text: `Hello! Your OTP for Donaro verification is: ${otp}. This code will expire in 10 minutes.`
       })
     });
 
     if (!response.ok) {
-      throw new Error(`MailerSend API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      console.error(`❌ MailerSend API Error Response:`, errorText);
+      throw new Error(`MailerSend API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     const result = await response.json();
-    console.log(`✅ Email sent successfully to ${to} - Message ID: ${result.message_id || 'N/A'}`);
+    console.log(`✅ Email sent successfully to ${to}`);
+    console.log(`📧 Message ID: ${result.message_id || 'N/A'}`);
+    console.log(`📧 Response:`, JSON.stringify(result, null, 2));
     return true;
 
   } catch (error) {
@@ -106,6 +109,9 @@ router.post('/generate', otpLimiter, async (req, res) => {
     });
 
     console.log(`OTP for ${email}: ${otp}`);
+    console.log(`📧 Attempting to send email via MailerSend...`);
+    console.log(`🔧 MailerSend API Key configured:`, !!process.env.MAILERSEND_API_KEY);
+    console.log(`🏷️ From email:`, process.env.FROM_EMAIL);
 
     // Send OTP email directly from backend (Railway compatible)
     const emailSubject = 'Donaro App - Email Verification';
@@ -147,7 +153,7 @@ router.post('/generate', otpLimiter, async (req, res) => {
     `;
 
     try {
-      await sendEmail(email, emailSubject, emailHtml);
+      await sendEmail(email, emailSubject, emailHtml, otp);
       console.log(`✅ OTP email sent successfully to ${email}`);
     } catch (emailError) {
       console.error('❌ Failed to send OTP email:', emailError);
@@ -234,6 +240,65 @@ router.post('/verify', async (req, res) => {
   } catch (error) {
     console.error('OTP verification error:', error);
     res.status(500).json({ error: 'Server error during OTP verification' });
+  }
+});
+
+// Test endpoint for email functionality (development only)
+router.post('/test-email', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    console.log(`🧪 Testing email to ${email}...`);
+
+    const testSubject = 'Donaro Email Test';
+    const testHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">✅ Email Test</h1>
+          <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">MailerSend Integration Test</p>
+        </div>
+        <div style="background: #ffffff; padding: 40px; border: 1px solid #e1e5e9; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">Email Test Successful!</h2>
+          <p style="color: #555; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+            If you received this email, your MailerSend integration is working correctly!
+          </p>
+          <p style="color: #666; font-size: 14px; margin: 25px 0;">
+            Sent from: ${process.env.FROM_EMAIL || 'test domain'}
+          </p>
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 30px;">
+            Donaro Email System Test - ${new Date().toISOString()}
+          </p>
+        </div>
+      </div>
+    `;
+
+    const result = await sendEmail(email, testSubject, testHtml, 'TEST');
+
+    if (result) {
+      res.json({
+        success: true,
+        message: 'Test email sent successfully',
+        email: email,
+        from: process.env.FROM_EMAIL
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to send test email',
+        email: email
+      });
+    }
+
+  } catch (error) {
+    console.error('Test email error:', error);
+    res.status(500).json({
+      error: 'Test email failed',
+      details: error.message
+    });
   }
 });
 
