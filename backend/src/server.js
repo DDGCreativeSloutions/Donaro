@@ -8,6 +8,14 @@ const { Server } = require('socket.io');
 // Load environment variables
 dotenv.config();
 
+// Load development environment variables if in development mode
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config({ path: '.env.development' });
+}
+
+// Import Prisma client
+const prisma = require('./utils/db');
+
 // Initialize Express app
 const app = express();
 
@@ -135,15 +143,64 @@ if (donationRoutes.setSSEBroadcast) {
 }
 
 // Health check endpoint for Railway
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    message: 'Donations Backend is running',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-    version: '1.0.0'
-  });
+app.get('/api/health', async (req, res) => {
+  try {
+    // Check if admin user exists
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@donaro.com';
+    const adminUser = await prisma.user.findUnique({
+      where: { email: adminEmail },
+    });
+    
+    const adminExists = !!adminUser;
+    
+    res.status(200).json({
+      status: 'OK',
+      message: 'Donations Backend is running',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development',
+      version: '1.0.0',
+      adminUserExists: adminExists
+    });
+  } catch (error) {
+    console.error('Health check error:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Health check failed',
+      error: error.message || 'Unknown error occurred'
+    });
+  }
+});
+
+// Admin verification endpoint
+app.get('/api/admin/verify', async (req, res) => {
+  try {
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@donaro.com';
+    const adminUser = await prisma.user.findUnique({
+      where: { email: adminEmail },
+    });
+    
+    if (adminUser) {
+      res.status(200).json({
+        status: 'OK',
+        message: 'Admin user exists',
+        adminEmail: adminUser.email
+      });
+    } else {
+      res.status(404).json({
+        status: 'NOT_FOUND',
+        message: 'Admin user not found',
+        setupRequired: true
+      });
+    }
+  } catch (error) {
+    console.error('Admin verification error:', error);
+    res.status(500).json({
+      status: 'ERROR',
+      message: 'Admin verification failed',
+      error: error.message || 'Unknown error occurred'
+    });
+  }
 });
 
 // Server-Sent Events endpoint for real-time updates (Vercel compatible)
@@ -197,7 +254,7 @@ app.get('/admin', (req, res) => {
   // For Railway/Vercel, static files should be served from the public directory
   if (isRailway || isVercel) {
     // For Railway/Vercel, static files are automatically served from the public directory
-    res.redirect('/index.html');
+    res.sendFile(path.join(__dirname, '../public/index.html'));
   } else {
     res.sendFile(path.join(__dirname, '../../admin/index.html'));
   }
@@ -218,9 +275,17 @@ app.get('/admin/*', (req, res) => {
   }
 
   if (isRailway || isVercel) {
-    // For Railway/Vercel, static files are automatically served from the public directory
-    // So we redirect to the static file
-    res.redirect(`/${filePath}`);
+    // For Railway/Vercel, serve files from the public directory
+    const publicPath = path.join(__dirname, '../public', filePath);
+    // Ensure the file path is within the public directory
+    const resolvedPublicPath = path.resolve(path.join(__dirname, '../public'));
+    const resolvedRequestedPath = path.resolve(publicPath);
+
+    if (!resolvedRequestedPath.startsWith(resolvedPublicPath)) {
+      return res.status(400).json({ error: 'Invalid file path' });
+    }
+
+    res.sendFile(publicPath);
   } else {
     // Ensure the file path is within the admin directory
     const resolvedPath = path.resolve(path.join(__dirname, '../../admin'));

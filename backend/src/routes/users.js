@@ -25,13 +25,11 @@ router.get('/', authorizeAdmin, async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     // Users can only access their own data (unless admin)
-    const isAdmin = req.user.email.endsWith('@yourdomain.com') || req.user.email === 'admin@donaro.com';
+    const isAdmin = req.user.email.endsWith('@yourdomain.com') || req.user.email === 'admin@donaro.com' || req.user.email === (process.env.ADMIN_EMAIL || 'admin@donaro.com');
     if (req.params.id !== req.user.id && !isAdmin) {
       return res.status(403).json({ error: 'Access denied' });
     }
     
-    // Remove special case for admin user - not needed anymore
-
     const user = await prisma.user.findUnique({
       where: { id: req.params.id },
     });
@@ -97,8 +95,9 @@ router.delete('/:id', authorizeAdmin, async (req, res) => {
     const userId = req.params.id;
     
     // Prevent admin from deleting themselves
-    if (userId === req.user.id) {
-      return res.status(400).json({ error: 'You cannot delete your own account' });
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@donaro.com';
+    if (userId === req.user.id && req.user.email === adminEmail) {
+      return res.status(400).json({ error: 'You cannot delete the admin account' });
     }
     
     // Check if user exists

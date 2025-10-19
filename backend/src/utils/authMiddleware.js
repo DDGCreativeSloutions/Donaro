@@ -41,9 +41,13 @@ const authorizeAdmin = (req, res, next) => {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  // Check if user is admin
-  // In production, you might want to check against a database field or list
-  if (!req.user.email.endsWith('@yourdomain.com') && req.user.email !== 'admin@donaro.com') {
+  // Check if user is admin using more robust methods
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@donaro.com';
+  const isAdmin = req.user.email === adminEmail || 
+                 req.user.email.endsWith('@yourdomain.com') || 
+                 req.user.isAdmin; // If there's an isAdmin field in the user model
+
+  if (!isAdmin) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 

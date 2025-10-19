@@ -47,9 +47,11 @@ const LoginScreen = () => {
       
       // Check if user is admin and redirect accordingly
       if (userData.isAdmin) {
-        // Open admin panel in browser
-        const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://donaro-backend.vercel.app';
-        WebBrowser.openBrowserAsync(`${API_BASE_URL}/admin`);
+        // Open admin panel in browser for admin users
+        // Remove /api from the base URL to get the correct admin panel URL
+        const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+        const adminPanelUrl = API_BASE_URL.replace('/api', '');
+        WebBrowser.openBrowserAsync(`${adminPanelUrl}/`);
       } else {
         // Redirect to regular user tabs
         router.replace('/(tabs)');

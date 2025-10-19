@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Donation Details - Donaro Admin Panel</title>
-    <link rel="icon" type="image/png" href="/assets/images/favicon.png">
+    <link rel="icon" type="image/png" href="favicon.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         // Handle missing favicon gracefully
@@ -554,8 +554,16 @@
     </div>
     
     <script>
-        // API Configuration
-        const API_BASE_URL = 'http://localhost:3000/api';
+        // API Configuration - Use environment-aware URL
+        // For local development, use port 3000 (configured in .env.development)
+        // For production/Railway, use the current origin
+        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3000/api' 
+            : window.location.origin + '/api';
+            
+        // Ensure API_BASE_URL doesn't end with double slashes
+        const normalizedApiBaseUrl = API_BASE_URL.replace(/\/+$/, '');
+        
         let authToken = localStorage.getItem('admin_token');
         
         // Get donation ID from URL
@@ -598,13 +606,14 @@
                 },
             };
             
-            const response = await fetch(API_BASE_URL + endpoint, {
+            const response = await fetch(normalizedApiBaseUrl + endpoint, {
                 ...defaultOptions,
                 ...options,
             });
             
             if (!response.ok) {
                 if (response.status === 401) {
+                    // Redirect to admin login page
                     window.location.href = '/admin/';
                     throw new Error('Unauthorized');
                 }
@@ -626,6 +635,19 @@
             });
             
             const user = donation.user || {};
+            
+            // Ensure image URLs are absolute
+            const donationPhotoUrl = donation.donationPhoto 
+                ? (donation.donationPhoto.startsWith('http') 
+                    ? donation.donationPhoto 
+                    : normalizedApiBaseUrl.replace('/api', '') + donation.donationPhoto)
+                : null;
+                
+            const selfiePhotoUrl = donation.selfiePhoto 
+                ? (donation.selfiePhoto.startsWith('http') 
+                    ? donation.selfiePhoto 
+                    : normalizedApiBaseUrl.replace('/api', '') + donation.selfiePhoto)
+                : null;
             
             document.getElementById('donation-content').innerHTML = 
                 '<div class="user-details-card">' +
@@ -707,8 +729,8 @@
                     '<div class="photo-card">' +
                         '<h3><i class="fas fa-camera"></i> Donation Photo</h3>' +
                         '<div class="photo-placeholder">' +
-                            (donation.donationPhoto ? 
-                              '<img src="' + donation.donationPhoto + '" alt="Donation" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';">' : 
+                            (donationPhotoUrl ? 
+                              '<img src="' + donationPhotoUrl + '" alt="Donation" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';">' : 
                               '<i class="fas fa-image" style="font-size: 3rem; color: #ccc;"></i>') +
                         '</div>' +
                     '</div>' +
@@ -716,8 +738,8 @@
                     '<div class="photo-card">' +
                         '<h3><i class="fas fa-user-circle"></i> Selfie with Donation</h3>' +
                         '<div class="photo-placeholder">' +
-                            (donation.selfiePhoto ? 
-                              '<img src="' + donation.selfiePhoto + '" alt="Selfie" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';">' : 
+                            (selfiePhotoUrl ? 
+                              '<img src="' + selfiePhotoUrl + '" alt="Selfie" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';">' : 
                               '<i class="fas fa-user" style="font-size: 3rem; color: #ccc;"></i>') +
                         '</div>' +
                     '</div>' +
@@ -754,7 +776,11 @@
                 });
                 
                 showToast('Donation ' + status + ' successfully!', 'success');
-                loadDonationDetails(); // Refresh the page
+                
+                // Refresh the page or go back to admin panel
+                setTimeout(() => {
+                    window.location.href = '/admin/';
+                }, 1500);
             } catch (error) {
                 showToast('Error updating donation: ' + error.message, 'error');
             }

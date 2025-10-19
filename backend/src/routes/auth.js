@@ -61,25 +61,30 @@ router.post('/login', async (req, res) => {
       where: { email },
     });
 
-    // If user not found, allow a development fallback for an admin user.
-    // This will create the admin user on first login when running in dev.
+    // If user not found, check if it's the admin trying to log in
     if (!user) {
-      // Only allow automatic creation in non-production environments
-      const devAdminEmail = process.env.ADMIN_EMAIL || 'admin@donaro.com';
-      const devAdminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@donaro.com';
+      const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
 
-      if (process.env.NODE_ENV === 'production') {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
-
-      if (email === devAdminEmail && password === devAdminPassword) {
+      // Check if this is an admin login attempt
+      if (email === adminEmail) {
+        // In production, we should not automatically create admin users
+        // Instead, we should return an error indicating admin user needs to be created
+        if (process.env.NODE_ENV === 'production') {
+          return res.status(401).json({ 
+            error: 'Admin user not found. Please run the configure-admin script.',
+            adminSetupRequired: true
+          });
+        }
+        
+        // In development, we can create the admin user if needed
         try {
-          const hashedPassword = await hashPassword(password);
+          const hashedPassword = await hashPassword(adminPassword);
           user = await prisma.user.create({
             data: {
-              name: 'Admin User',
-              email,
-              phone: '0000000000',
+              name: process.env.ADMIN_NAME || 'Admin User',
+              email: adminEmail,
+              phone: process.env.ADMIN_PHONE || '0000000000',
               password: hashedPassword,
             },
           });
@@ -103,9 +108,9 @@ router.post('/login', async (req, res) => {
     // Generate token
     const token = generateToken(user.id);
 
-    // Check if user is admin (based on email domain or specific admin email)
-    // In a production environment, you would use a more robust method
-    const isAdminUser = email.endsWith('@yourdomain.com') || email === 'admin@donaro.com';
+    // Check if user is admin (based on email or environment variables)
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@donaro.com';
+    const isAdminUser = email === adminEmail || email.endsWith('@yourdomain.com');
 
     res.json({
       id: user.id,

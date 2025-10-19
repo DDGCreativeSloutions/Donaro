@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Donaro Admin Panel</title>
-    <link rel="icon" type="image/png" href="../assets/images/favicon.png">
+    <link rel="icon" type="image/png" href="favicon.ico">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -768,14 +768,22 @@
     
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script>
-        // API Configuration
-        const API_BASE_URL = 'https://donaro-production.up.railway.app/api';
+        // API Configuration - Use environment-aware URL
+        // For local development, use port 3000 (configured in .env.development)
+        // For production/Railway, use the current origin
+        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+            ? 'http://localhost:3000/api' 
+            : window.location.origin + '/api';
+            
+        // Ensure API_BASE_URL doesn't end with double slashes
+        const normalizedApiBaseUrl = API_BASE_URL.replace(/\/+$/, '');
+        
         let authToken = localStorage.getItem('admin_token');
         let socket = null;
 
         // Debug: Show current auth status
         console.log('🔐 Admin Panel Loaded');
-        console.log('🏠 API Base URL:', API_BASE_URL);
+        console.log('🏠 API Base URL:', normalizedApiBaseUrl);
         console.log('🔑 Auth Token:', authToken ? 'Present (' + authToken.substring(0, 20) + '...)' : 'Not found');
         
         // Mobile menu toggle
@@ -784,11 +792,33 @@
             const sidebar = document.getElementById('sidebar');
             const sidebarOverlay = document.getElementById('sidebar-overlay');
             const headerControls = document.getElementById('header-controls');
+            const sidebarItems = document.querySelectorAll('.sidebar li');
             
-            if (menuToggle) {
+            // Initialize sidebar navigation
+            sidebarItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    // Remove active class from all items
+                    sidebarItems.forEach(i => i.classList.remove('active'));
+                    // Add active class to clicked item
+                    this.classList.add('active');
+                    
+                    // Close sidebar on mobile after selection
+                    if (window.innerWidth <= 992) {
+                        sidebar.classList.remove('active');
+                        if (sidebarOverlay) {
+                            sidebarOverlay.classList.remove('active');
+                        }
+                    }
+                });
+            });
+            
+            if (menuToggle && sidebar) {
                 menuToggle.addEventListener('click', function() {
                     sidebar.classList.toggle('active');
-                    sidebarOverlay.classList.toggle('active');
+                    if (sidebarOverlay) {
+                        sidebarOverlay.classList.toggle('active');
+                    }
                 });
             }
             
@@ -798,23 +828,6 @@
                     sidebarOverlay.classList.remove('active');
                 });
             }
-            
-            // Initialize sidebar navigation
-            const sidebarItems = document.querySelectorAll('.sidebar li');
-            sidebarItems.forEach(item => {
-                item.addEventListener('click', function() {
-                    // Remove active class from all items
-                    sidebarItems.forEach(i => i.classList.remove('active'));
-                    // Add active class to clicked item
-                    this.classList.add('active');
-                    
-                    // Close sidebar on mobile after selection
-                    if (window.innerWidth <= 992) {
-                        sidebar.classList.remove('active');
-                        sidebarOverlay.classList.remove('active');
-                    }
-                });
-            });
         });
         
         // Check if already logged in
@@ -827,7 +840,7 @@
         // Initialize real-time updates (Socket.IO for local, SSE/Polling for Vercel)
         function initializeRealTimeUpdates() {
             // For Vercel deployment, we use SSE and polling
-            if (API_BASE_URL.includes('donaro-backend.vercel.app')) {
+            if (normalizedApiBaseUrl.includes('vercel.app')) {
                 console.log('Using SSE and polling for real-time updates on Vercel');
 
                 // Initialize SSE connection
@@ -848,11 +861,21 @@
                 });
             } else {
                 // Use Socket.IO for local development
-                socket = io(API_BASE_URL.replace('/api', ''));
+                const socketUrl = normalizedApiBaseUrl.replace('/api', '');
+                socket = io(socketUrl, {
+                    transports: ['websocket', 'polling'],
+                    reconnection: true,
+                    reconnectionAttempts: 5,
+                    reconnectionDelay: 1000
+                });
 
                 socket.on('connect', () => {
                     console.log('Connected to Socket.IO server');
                     socket.emit('joinAdminRoom');
+                });
+
+                socket.on('connect_error', (error) => {
+                    console.error('Socket.IO connection error:', error);
                 });
 
                 // Listen for real-time donation updates
@@ -875,6 +898,10 @@
                     console.log('Withdrawal status updated:', withdrawal);
                     refreshCurrentView();
                 });
+                
+                socket.on('disconnect', (reason) => {
+                    console.log('Socket.IO disconnected:', reason);
+                });
             }
         }
 
@@ -887,7 +914,8 @@
             }
 
             console.log('Initializing SSE connection...');
-            sseEventSource = new EventSource(API_BASE_URL + '/events');
+            const sseUrl = normalizedApiBaseUrl + '/events';
+            sseEventSource = new EventSource(sseUrl);
 
             sseEventSource.onopen = function(event) {
                 console.log('SSE connection opened');
@@ -899,11 +927,19 @@
                     console.log('SSE message received:', data);
 
                     // Handle different event types
-                    if (data.type === 'donationCreated') {
+                    if (data.type === 'connected') {
+                        console.log('SSE connection established:', data.message);
+                    } else if (data.type === 'donationCreated') {
                         console.log('New donation via SSE:', data.data);
                         refreshCurrentView();
                     } else if (data.type === 'donationStatusUpdated') {
                         console.log('Donation status updated via SSE:', data.data);
+                        refreshCurrentView();
+                    } else if (data.type === 'withdrawalCreated') {
+                        console.log('New withdrawal via SSE:', data.data);
+                        refreshCurrentView();
+                    } else if (data.type === 'withdrawalStatusUpdated') {
+                        console.log('Withdrawal status updated via SSE:', data.data);
                         refreshCurrentView();
                     }
                 } catch (error) {
@@ -939,21 +975,27 @@
             console.log('Starting admin dashboard polling...');
             adminPollingInterval = setInterval(async () => {
                 try {
+                    // Only poll if we have an auth token
+                    if (!authToken) {
+                        stopAdminPolling();
+                        return;
+                    }
+                    
                     const currentTime = Date.now();
                     // Throttle updates to avoid too frequent requests
                     if (currentTime - lastStatsUpdate < 3000) return;
 
                     const [pendingDonations, approvedDonations, rejectedDonations, pendingWithdrawals] = await Promise.all([
-                        fetch(API_BASE_URL + '/donations/status/pending', {
+                        fetch(normalizedApiBaseUrl + '/donations/status/pending', {
                             headers: { 'Authorization': 'Bearer ' + authToken }
                         }).then(r => r.ok ? r.json() : []),
-                        fetch(API_BASE_URL + '/donations/status/approved', {
+                        fetch(normalizedApiBaseUrl + '/donations/status/approved', {
                             headers: { 'Authorization': 'Bearer ' + authToken }
                         }).then(r => r.ok ? r.json() : []),
-                        fetch(API_BASE_URL + '/donations/status/rejected', {
+                        fetch(normalizedApiBaseUrl + '/donations/status/rejected', {
                             headers: { 'Authorization': 'Bearer ' + authToken }
                         }).then(r => r.ok ? r.json() : []),
-                        fetch(API_BASE_URL + '/withdrawals/status/pending', {
+                        fetch(normalizedApiBaseUrl + '/withdrawals/status/pending', {
                             headers: { 'Authorization': 'Bearer ' + authToken }
                         }).then(r => r.ok ? r.json() : [])
                     ]);
@@ -972,6 +1014,10 @@
                     lastStatsUpdate = currentTime;
                 } catch (error) {
                     console.error('Error during admin polling:', error);
+                    // If we get an auth error, logout
+                    if (error.message.includes('Unauthorized')) {
+                        logout();
+                    }
                 }
             }, 5000); // Poll every 5 seconds
         }
@@ -1006,7 +1052,7 @@
             const errorDiv = document.getElementById('login-error');
             
             try {
-                const response = await fetch(API_BASE_URL + '/auth/login', {
+                const response = await fetch(normalizedApiBaseUrl + '/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1063,12 +1109,49 @@
             const menuToggle = document.getElementById('menu-toggle');
 
             if (loginContainer) loginContainer.style.display = 'none';
-            if (sidebar) sidebar.style.display = 'block';
+            if (sidebar) {
+                sidebar.style.display = 'block';
+                // On mobile, hide sidebar by default and show menu toggle
+                if (window.innerWidth <= 992) {
+                    sidebar.classList.remove('active');
+                }
+            }
             if (headerControls) headerControls.style.display = 'flex';
 
             // Show menu toggle on mobile
             if (menuToggle) {
                 menuToggle.style.display = 'block';
+            }
+        }
+        
+        // Check if already logged in
+        if (authToken) {
+            // Verify admin user exists before showing admin panel
+            verifyAdminUser().then(isValid => {
+                if (isValid) {
+                    showAdminPanel();
+                    loadDashboard();
+                    initializeRealTimeUpdates();
+                } else {
+                    showLoginForm();
+                }
+            }).catch(() => {
+                showLoginForm();
+            });
+        }
+        
+        // Verify admin user exists
+        async function verifyAdminUser() {
+            try {
+                const response = await fetch(normalizedApiBaseUrl + '/admin/verify');
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.status === 'OK';
+                }
+                return false;
+            } catch (error) {
+                console.error('Admin verification error:', error);
+                return false;
             }
         }
         
@@ -1108,7 +1191,7 @@
         
         // API functions
         async function apiRequest(endpoint, options = {}) {
-            console.log('🔄 API REQUEST:', API_BASE_URL + endpoint);
+            console.log('🔄 API REQUEST:', normalizedApiBaseUrl + endpoint);
             console.log('🔑 Auth token present:', !!authToken);
             console.log('📝 Request options:', options);
 
@@ -1123,7 +1206,7 @@
 
             try {
                 console.log('🚀 Making fetch request...');
-                const response = await fetch(API_BASE_URL + endpoint, {
+                const response = await fetch(normalizedApiBaseUrl + endpoint, {
                     ...defaultOptions,
                     ...options,
                 });
@@ -1436,46 +1519,18 @@
             console.log('Setting loading state...');
             mainContent.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading users...</p></div>';
 
-            // First, let's test the API directly without authentication
-            console.log('Testing API without authentication...');
             try {
-                const directResponse = await fetch(API_BASE_URL + '/users');
-                console.log('Direct API response status:', directResponse.status);
-
-                if (directResponse.status === 401) {
-                    console.log('Authentication required - this is expected');
-                    mainContent.innerHTML =
-                        '<div class="empty-state" style="color:orange;padding:20px;text-align:center;">' +
-                        '<h3>🔐 Authentication Required</h3>' +
-                        '<p>The admin user needs to be created in the database.</p>' +
-                        '<div style="background:#f0f0f0;padding:15px;margin:15px 0;border-radius:5px;">' +
-                        '<strong>To fix this, run:</strong><br>' +
-                        '<code style="background:#fff;padding:10px;display:block;margin:10px 0;">node backend/configure-admin.js</code>' +
-                        '</div>' +
-                        '<p><strong>Then refresh this page and login again.</strong></p>' +
-                        '<button onclick="location.reload()" style="padding:10px;margin:10px;">Refresh Page</button>' +
-                        '</div>';
-                    return;
-                }
-
-                if (!directResponse.ok) {
-                    throw new Error('Direct API test failed');
-                }
-
-                const users = await directResponse.json();
-                console.log('Direct API success! Users:', users);
-
-                // If we get here, API works - now try with authentication
-                const usersWithAuth = await apiRequest('/users');
-                console.log('Authenticated API success! Users:', usersWithAuth);
+                // Try to fetch users with authentication
+                const users = await apiRequest('/users');
+                console.log('Authenticated API success! Users:', users);
 
                 // Build the users table
                 let contentHtml = '<div class="pending-donations">' +
-                    '<h2>Users Management (' + usersWithAuth.length + ')' +
+                    '<h2>Users Management (' + users.length + ')' +
                     '<button class="refresh-btn" onclick="loadUsers()">' +
                     '<i class="fas fa-sync-alt"></i> Refresh</button></h2>';
 
-                if (usersWithAuth.length === 0) {
+                if (users.length === 0) {
                     contentHtml += '<div class="empty-state"><p>No users found</p></div>';
                 } else {
                     contentHtml += '<div style="overflow-x:auto;margin-top:20px;">' +
@@ -1489,7 +1544,7 @@
                         '<th style="padding:12px;text-align:center;">Actions</th>' +
                         '</tr></thead><tbody>';
 
-                    usersWithAuth.forEach((user, index) => {
+                    users.forEach((user, index) => {
                         console.log('Rendering user', index, ':', user);
                         contentHtml += '<tr style="border-bottom:1px solid #eee;">' +
                             '<td style="padding:12px;">' + (user.name || 'No Name') + '</td>' +
@@ -1512,13 +1567,14 @@
                 console.error('❌ Error in loadUsers:', error);
 
                 if (error.message.includes('Unauthorized')) {
+                    // Check if this is an admin setup required error
                     mainContent.innerHTML =
                         '<div class="empty-state" style="color:orange;padding:20px;text-align:center;">' +
                         '<h3>🔐 Admin User Not Found</h3>' +
                         '<p>You need to create the admin user in the database first.</p>' +
                         '<div style="background:#fff;padding:15px;margin:15px 0;border-radius:5px;border:1px solid #ddd;">' +
                         '<strong>Run this command in your terminal:</strong><br>' +
-                        '<code style="background:#f0f0f0;padding:10px;display:block;margin:10px 0;">node backend/configure-admin.js</code>' +
+                        '<code style="background:#f0f0f0;padding:10px;display:block;margin:10px 0;">cd backend && node configure-admin.js</code>' +
                         '</div>' +
                         '<p><strong>Then:</strong></p>' +
                         '<ol style="text-align:left;display:inline-block;">' +
@@ -1885,8 +1941,9 @@
         }
         
         function viewDonationDetails(donationId) {
-            // Redirect to donation details page
-            window.location.href = '/admin/donation-details.html?id=' + donationId;
+            // Redirect to donation details page with proper URL construction
+            const baseUrl = window.location.origin;
+            window.location.href = baseUrl + '/admin/donation-details.html?id=' + donationId;
         }
         
         function viewUserDetails(userId) {
@@ -2003,6 +2060,12 @@
                     case 'Pending Withdrawals':
                         loadPendingWithdrawals();
                         break;
+                    case 'Users':
+                        loadUsers();
+                        break;
+                    default:
+                        // For other views, just reload the dashboard
+                        loadDashboard();
                 }
             }
         }
@@ -2044,6 +2107,29 @@
         async function testAllAPIs() {
             console.log('🧪 TESTING ALL APIs...');
 
+            // Create modal for displaying results
+            const modalHTML = 
+                '<div class="modal-overlay" id="api-test-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 2000;">' +
+                    '<div class="modal-content" style="background: white; border-radius: 10px; padding: 20px; max-width: 80%; max-height: 80%; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">' +
+                        '<div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">' +
+                            '<h2 style="margin: 0;"><i class="fas fa-flask"></i> API Test Results</h2>' +
+                            '<button class="modal-close" onclick="closeApiTestModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>' +
+                        '</div>' +
+                        '<div class="modal-body" id="api-test-results" style="font-family: monospace; font-size: 0.9rem;">' +
+                            '<div>🧪 Starting API tests...</div>' +
+                        '</div>' +
+                        '<div class="modal-footer" style="margin-top: 20px; text-align: right;">' +
+                            '<button class="btn btn-primary" onclick="closeApiTestModal()" style="padding: 8px 16px; background: #6C63FF; color: white; border: none; border-radius: 5px; cursor: pointer;">Close</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            
+            // Add modal to page
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            
+            const resultsContainer = document.getElementById('api-test-results');
+            
             const endpoints = [
                 { name: 'Health Check', endpoint: '/health', method: 'GET' },
                 { name: 'Users List', endpoint: '/users', method: 'GET' },
@@ -2054,8 +2140,13 @@
 
             for (const test of endpoints) {
                 try {
-                    console.log(`\n🔍 Testing ${test.name}...`);
-                    const response = await fetch(API_BASE_URL + test.endpoint, {
+                    // Add test start message
+                    const testStartDiv = document.createElement('div');
+                    testStartDiv.innerHTML = `🔍 Testing ${test.name}...`;
+                    resultsContainer.appendChild(testStartDiv);
+                    resultsContainer.scrollTop = resultsContainer.scrollHeight;
+                    
+                    const response = await fetch(normalizedApiBaseUrl + test.endpoint, {
                         method: test.method,
                         headers: authToken ? {
                             'Authorization': 'Bearer ' + authToken,
@@ -2063,22 +2154,44 @@
                         } : { 'Content-Type': 'application/json' }
                     });
 
-                    console.log(`✅ ${test.name}: Status ${response.status}`);
-
                     if (response.ok) {
                         const data = await response.json();
-                        console.log(`📦 ${test.name}: Data received (${Array.isArray(data) ? data.length : 'N/A'} items)`);
+                        const resultDiv = document.createElement('div');
+                        resultDiv.innerHTML = `✅ ${test.name}: Status ${response.status} - Data received (${Array.isArray(data) ? data.length : 'N/A'} items)`;
+                        resultDiv.style.color = 'green';
+                        resultsContainer.appendChild(resultDiv);
                     } else {
-                        console.error(`❌ ${test.name}: Failed with status ${response.status}`);
                         const errorText = await response.text();
-                        console.error(`❌ Error: ${errorText}`);
+                        const resultDiv = document.createElement('div');
+                        resultDiv.innerHTML = `❌ ${test.name}: Failed with status ${response.status} - ${errorText}`;
+                        resultDiv.style.color = 'red';
+                        resultsContainer.appendChild(resultDiv);
                     }
                 } catch (error) {
-                    console.error(`💥 ${test.name}: Exception - ${error.message}`);
+                    const resultDiv = document.createElement('div');
+                    resultDiv.innerHTML = `💥 ${test.name}: Exception - ${error.message}`;
+                    resultDiv.style.color = 'red';
+                    resultsContainer.appendChild(resultDiv);
                 }
+                
+                // Scroll to bottom
+                resultsContainer.scrollTop = resultsContainer.scrollHeight;
             }
 
-            showToast('API tests completed - check console for results', 'info');
+            // Add completion message
+            const completionDiv = document.createElement('div');
+            completionDiv.innerHTML = '<br>✅ API tests completed!';
+            completionDiv.style.fontWeight = 'bold';
+            resultsContainer.appendChild(completionDiv);
+            resultsContainer.scrollTop = resultsContainer.scrollHeight;
+        }
+
+        function closeApiTestModal() {
+            const modal = document.getElementById('api-test-modal');
+            if (modal) {
+                modal.remove();
+                document.body.style.overflow = 'auto'; // Re-enable scrolling
+            }
         }
 
         // Make testAllAPIs available globally for console testing
