@@ -233,8 +233,10 @@ const OTPVerificationScreen = () => {
             EMAILJS_CONFIG.TEMPLATE_ID,
             {
               to_email: email,
-              otp: newOtpCode,        // ✅ Fixed: matches template variable ${otp}
+              otp: newOtpCode,
               user_name: fullName,
+              // Also try with different variable names to match template
+              otp_code: newOtpCode,
             },
             EMAILJS_CONFIG.PUBLIC_KEY
           );

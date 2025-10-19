@@ -277,6 +277,7 @@ app.get('/admin/*', (req, res) => {
   if (isRailway || isVercel) {
     // For Railway/Vercel, serve files from the public directory
     const publicPath = path.join(__dirname, '../public', filePath);
+
     // Ensure the file path is within the public directory
     const resolvedPublicPath = path.resolve(path.join(__dirname, '../public'));
     const resolvedRequestedPath = path.resolve(publicPath);
@@ -285,7 +286,14 @@ app.get('/admin/*', (req, res) => {
       return res.status(400).json({ error: 'Invalid file path' });
     }
 
-    res.sendFile(publicPath);
+    // Check if file exists before sending
+    const fs = require('fs');
+    if (fs.existsSync(publicPath)) {
+      res.sendFile(publicPath);
+    } else {
+      console.error('File not found:', publicPath);
+      res.status(404).json({ error: 'File not found' });
+    }
   } else {
     // Ensure the file path is within the admin directory
     const resolvedPath = path.resolve(path.join(__dirname, '../../admin'));
@@ -295,7 +303,14 @@ app.get('/admin/*', (req, res) => {
       return res.status(400).json({ error: 'Invalid file path' });
     }
 
-    res.sendFile(requestedPath);
+    // Check if file exists before sending
+    const fs = require('fs');
+    if (fs.existsSync(requestedPath)) {
+      res.sendFile(requestedPath);
+    } else {
+      console.error('File not found:', requestedPath);
+      res.status(404).json({ error: 'File not found' });
+    }
   }
 });
 
