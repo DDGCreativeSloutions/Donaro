@@ -13,7 +13,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001/a
 
 // EmailJS Configuration - Replace with your actual credentials
 const EMAILJS_CONFIG = {
-  SERVICE_ID: 'service_0zt6x89',     // Get from EmailJS dashboard
+  SERVICE_ID: 'service_undmw4c',     // Updated EmailJS service ID
   TEMPLATE_ID: 'template_oe1jicm',   // Get from EmailJS dashboard
   PUBLIC_KEY: 'bpWDQy63wlpfsWHk7'      // Get from EmailJS dashboard
 };
@@ -83,15 +83,13 @@ const OTPVerificationScreen = () => {
     email,
     phone,
     password,
-    userData,
-    otp: otpFromParams
+    userData
   } = params as {
     fullName: string;
     email: string;
     phone: string;
     password: string;
     userData: string;
-    otp: string;
   };
 
   // Timer for resend OTP
@@ -107,14 +105,6 @@ const OTPVerificationScreen = () => {
     };
   }, [timer]);
 
-  // Auto-fill OTP if provided (for Railway testing)
-  React.useEffect(() => {
-    if (otpFromParams && otpFromParams.length === 6) {
-      const otpArray = otpFromParams.split('');
-      setOtp(otpArray);
-      console.log('Auto-filled OTP for testing:', otpFromParams);
-    }
-  }, [otpFromParams]);
 
   const handleOtpChange = (text: string, index: number) => {
     // Only allow numeric input
@@ -234,7 +224,7 @@ const OTPVerificationScreen = () => {
             EMAILJS_CONFIG.TEMPLATE_ID,
             {
               to_email: email,
-              otp_code: newOtpCode,
+              otp: newOtpCode,        // ✅ Fixed: matches template variable ${otp}
               user_name: fullName,
             },
             EMAILJS_CONFIG.PUBLIC_KEY
@@ -271,13 +261,8 @@ const OTPVerificationScreen = () => {
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <Text style={styles.headerTitle}>Verify Your Email</Text>
         <Text style={styles.headerSubtitle}>Enter the 6-digit code sent to {email}</Text>
-        {otpFromParams && (
-          <View style={[styles.testingNote, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-            <Text style={styles.testingNoteText}>Testing Mode: OTP auto-filled from server</Text>
-          </View>
-        )}
       </View>
-      
+
       <View style={styles.content}>
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           {/* OTP Input Fields */}
@@ -358,19 +343,6 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     textAlign: 'center',
     marginBottom: 10,
-  },
-  testingNote: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 15,
-    marginTop: 5,
-  },
-  testingNoteText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
   },
   content: {
     flex: 1,

@@ -24,7 +24,7 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://donaro-producti
 
 // EmailJS Configuration - Replace with your actual credentials
 const EMAILJS_CONFIG = {
-  SERVICE_ID: 'service_0zt6x89',     // Get from EmailJS dashboard
+  SERVICE_ID: 'service_undmw4c',     // Updated EmailJS service ID
   TEMPLATE_ID: 'template_oe1jicm',   // Get from EmailJS dashboard
   PUBLIC_KEY: 'bpWDQy63wlpfsWHk7'      // Get from EmailJS dashboard
 };
@@ -86,7 +86,6 @@ const SignupScreen = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
-  const [agreeToPrivacy, setAgreeToPrivacy] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleTermsPress = () => {
@@ -160,7 +159,7 @@ const SignupScreen = () => {
             EMAILJS_CONFIG.TEMPLATE_ID,
             {
               to_email: email,
-              otp_code: otpCode,
+              otp: otpCode,        // ✅ Fixed: matches template variable ${otp}
               user_name: fullName,
             },
             EMAILJS_CONFIG.PUBLIC_KEY
@@ -176,12 +175,25 @@ const SignupScreen = () => {
               password,
             }
           });
-        } catch (emailError) {
+        } catch (emailError: any) {
           console.error('EmailJS signup error:', emailError);
-          Alert.alert(
-            'Email Error',
-            'OTP generated but email sending failed. Please use the OTP shown in console or try again.'
-          );
+
+          // Check if it's a Gmail authentication error
+          if (emailError.text && emailError.text.includes('Invalid grant')) {
+            Alert.alert(
+              'Email Configuration Error',
+              'Gmail account needs to be reconnected in EmailJS dashboard. Please contact support or use the OTP shown in console for testing.',
+              [
+                { text: 'OK' }
+              ]
+            );
+          } else {
+            Alert.alert(
+              'Email Error',
+              'OTP generated but email sending failed. Please use the OTP shown in console or try again.'
+            );
+          }
+
           // Still navigate to OTP screen for testing purposes
           router.push({
             pathname: '/otp-verification',
@@ -190,7 +202,6 @@ const SignupScreen = () => {
               email,
               phone,
               password,
-              otp: otpCode, // Pass OTP for testing
             }
           });
         }
@@ -230,81 +241,82 @@ const SignupScreen = () => {
 
           <View style={styles.content}>
             <View style={[styles.card, { backgroundColor: colors.card }]}>
-          <View style={styles.inputContainer}>
-            <Input
-              placeholder="Full Name"
-              value={fullName}
-              onChangeText={setFullName}
-              autoCapitalize="words"
-              icon="user"
-            />
-          </View>
-          
-          <View style={styles.inputContainer}>
-            <Input
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              icon="mail"
-            />
-          </View>
-          
-          <View style={styles.inputContainer}>
-            <Input
-              placeholder="10-digit Mobile Number"
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              maxLength={10}
-              icon="phone"
-            />
-          </View>
-          
-          <View style={styles.inputContainer}>
-            <Input
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              icon="lock"
-            />
-            <TouchableOpacity 
-              onPress={() => setShowPassword(!showPassword)} 
-              style={styles.showPasswordButton}
-            >
-              <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color={colors.gray} />
-            </TouchableOpacity>
-          </View>
-          
-          {/* Single checkbox for both terms and privacy */}
-          <View style={styles.checkboxContainer}>
-            <TouchableOpacity 
-              style={styles.checkbox} 
-              onPress={() => setAgreeToTerms(!agreeToTerms)}
-            >
-              <Feather 
-                name={agreeToTerms ? 'check-square' : 'square'} 
-                size={20} 
-                color={agreeToTerms ? colors.primary : colors.gray} 
-              />
-            </TouchableOpacity>
-            <Text style={[styles.checkboxText, { color: colors.text }]}>
-              I agree to the 
-              <Text style={[styles.link, { color: colors.primary }]} onPress={handleTermsPress}> Terms of Service</Text>
-              {' '}and
-              <Text style={[styles.link, { color: colors.primary }]} onPress={handlePrivacyPress}> Privacy Policy</Text>
-            </Text>
-          </View>
-          
+              <View style={styles.inputContainer}>
+                <Input
+                  placeholder="Full Name"
+                  value={fullName}
+                  onChangeText={setFullName}
+                  autoCapitalize="words"
+                  icon="user"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Input
+                  placeholder="Email"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  icon="mail"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Input
+                  placeholder="10-digit Mobile Number"
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  icon="phone"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Input
+                  placeholder="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  icon="lock"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.showPasswordButton}
+                >
+                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={20} color={colors.gray} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Single checkbox for both terms and privacy */}
+              <View style={styles.checkboxContainer}>
+                <TouchableOpacity
+                  style={styles.checkbox}
+                  onPress={() => setAgreeToTerms(!agreeToTerms)}
+                >
+                  <Feather
+                    name={agreeToTerms ? 'check-square' : 'square'}
+                    size={20}
+                    color={agreeToTerms ? colors.primary : colors.gray}
+                  />
+                </TouchableOpacity>
+                <Text style={[styles.checkboxText, { color: colors.text }]}>
+                  I agree to the
+                  <Text style={[styles.link, { color: colors.primary }]} onPress={handleTermsPress}> Terms of Service</Text>
+                  {' '}and
+                  <Text style={[styles.link, { color: colors.primary }]} onPress={handlePrivacyPress}> Privacy Policy</Text>
+                </Text>
+              </View>
+
               <Button
                 title={isLoading ? 'Creating Account...' : 'Sign Up'}
                 onPress={handleSignup}
                 disabled={isLoading}
                 style={styles.signupButton}
               />
-        </View>
+            </View>
+
             <View style={styles.footer}>
               <Text style={[styles.footerText, { color: colors.gray }]}>Already have an account? </Text>
               <TouchableOpacity onPress={() => router.push('/login')}>
