@@ -12,7 +12,7 @@ variables = { NODE_ENV = "production" }
 cmds = ["echo 'Fast deployment starting...'"]
 
 [phases.install]
-cmds = ["npm ci --omit=dev --prefer-offline"]
+cmds = ["npm ci --omit=dev --prefer-offline --no-audit"]
 
 [phases.build]
-cmds = ["npx prisma generate --schema=./prisma/schema.prod.prisma", "npm run build"]
+cmds = ["npx prisma generate --schema=./prisma/schema.prod.prisma"]
