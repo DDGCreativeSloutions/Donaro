@@ -26,6 +26,11 @@ const isValidUrl = (url: string): boolean => {
       return true;
     }
 
+    // Allow Railway deployments
+    if (hostname.endsWith('.railway.app') || hostname.includes('.up.railway.app')) {
+      return true;
+    }
+
     // Add your allowed hostnames here
     // if (hostname.endsWith('yourdomain.com')) {
     //   return true;

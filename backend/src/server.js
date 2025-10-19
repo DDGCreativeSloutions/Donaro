@@ -18,6 +18,11 @@ const isVercel = process.env.NOW_REGION || process.env.VERCEL;
 // For Railway compatibility
 const isRailway = process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID;
 
+// Trust proxy for Railway deployment to handle X-Forwarded-For headers properly
+if (isRailway) {
+  app.set('trust proxy', 1);
+}
+
 // Middleware - Production-ready CORS configuration
 app.use(cors({
   origin: function (origin, callback) {

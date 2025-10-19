@@ -6,11 +6,17 @@ import { apiService } from '@/services/api';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import emailjs from '@emailjs/browser';
 
-// Get API base URL from environment
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?
-  process.env.EXPO_PUBLIC_API_URL :
-  'https://donaro-backend.vercel.app/api';
+// Get API base URL from environment variables
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://donaro-production.up.railway.app/api';
+
+// EmailJS Configuration - Replace with your actual credentials
+const EMAILJS_CONFIG = {
+  SERVICE_ID: 'service_0zt6x89',     // Get from EmailJS dashboard
+  TEMPLATE_ID: 'template_oe1jicm',   // Get from EmailJS dashboard
+  PUBLIC_KEY: 'bpWDQy63wlpfsWHk7'      // Get from EmailJS dashboard
+};
 
 // Validate URL to prevent SSRF
 const isValidUrl = (url: string): boolean => {
@@ -34,6 +40,11 @@ const isValidUrl = (url: string): boolean => {
 
     // Allow Vercel deployments
     if (hostname.endsWith('.vercel.app') || hostname === 'donaro-backend.vercel.app') {
+      return true;
+    }
+
+    // Allow Railway deployments
+    if (hostname.endsWith('.railway.app') || hostname.includes('.up.railway.app')) {
       return true;
     }
 
@@ -67,18 +78,20 @@ const OTPVerificationScreen = () => {
   
   // Get user data from previous screen
   const params = useLocalSearchParams();
-  const { 
-    fullName, 
-    email, 
-    phone, 
+  const {
+    fullName,
+    email,
+    phone,
     password,
-    userData 
-  } = params as { 
-    fullName: string; 
-    email: string; 
-    phone: string; 
+    userData,
+    otp: otpFromParams
+  } = params as {
+    fullName: string;
+    email: string;
+    phone: string;
     password: string;
     userData: string;
+    otp: string;
   };
 
   // Timer for resend OTP
@@ -93,6 +106,15 @@ const OTPVerificationScreen = () => {
       if (interval) clearInterval(interval);
     };
   }, [timer]);
+
+  // Auto-fill OTP if provided (for Railway testing)
+  React.useEffect(() => {
+    if (otpFromParams && otpFromParams.length === 6) {
+      const otpArray = otpFromParams.split('');
+      setOtp(otpArray);
+      console.log('Auto-filled OTP for testing:', otpFromParams);
+    }
+  }, [otpFromParams]);
 
   const handleOtpChange = (text: string, index: number) => {
     // Only allow numeric input
@@ -183,30 +205,53 @@ const OTPVerificationScreen = () => {
 
   const handleResendOTP = async () => {
     if (timer > 0) return;
-    
+
     // Validate API URL before making requests
     if (!isValidUrl(API_BASE_URL)) {
       Alert.alert('Error', 'Invalid API configuration. Please contact support.');
       return;
     }
-    
+
     try {
-      // Request new OTP
+      // Request new OTP (backend returns OTP in response)
       const response = await fetch(`${API_BASE_URL}/otp/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }), // Changed from phone to email
+        body: JSON.stringify({ email }),
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
-        Alert.alert('Success', 'New OTP has been sent to your email address.');
-        setTimer(30); // Reset timer
+        const newOtpCode = result.otp;
+
+        // Send email using EmailJS
+        try {
+          await emailjs.send(
+            EMAILJS_CONFIG.SERVICE_ID,
+            EMAILJS_CONFIG.TEMPLATE_ID,
+            {
+              to_email: email,
+              otp_code: newOtpCode,
+              user_name: fullName,
+            },
+            EMAILJS_CONFIG.PUBLIC_KEY
+          );
+
+          Alert.alert('Success', 'New OTP has been sent to your email address.');
+          setTimer(30); // Reset timer
+        } catch (emailError) {
+          console.error('EmailJS resend error:', emailError);
+          Alert.alert(
+            'Email Error',
+            'OTP generated but email sending failed. Please use the OTP shown in console or try again.'
+          );
+          setTimer(30);
+        }
       } else {
-        Alert.alert('Error', result.error || 'Failed to send OTP. Please try again.');
+        Alert.alert('Error', result.error || 'Failed to generate OTP. Please try again.');
       }
     } catch (error: any) {
       console.error('Resend OTP error:', error);
@@ -226,6 +271,11 @@ const OTPVerificationScreen = () => {
       <View style={[styles.header, { backgroundColor: colors.primary }]}>
         <Text style={styles.headerTitle}>Verify Your Email</Text>
         <Text style={styles.headerSubtitle}>Enter the 6-digit code sent to {email}</Text>
+        {otpFromParams && (
+          <View style={[styles.testingNote, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+            <Text style={styles.testingNoteText}>Testing Mode: OTP auto-filled from server</Text>
+          </View>
+        )}
       </View>
       
       <View style={styles.content}>
@@ -306,6 +356,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     opacity: 0.9,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  testingNote: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
+    marginTop: 5,
+  },
+  testingNoteText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
     textAlign: 'center',
   },
   content: {

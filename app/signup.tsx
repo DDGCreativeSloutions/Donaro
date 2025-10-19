@@ -17,11 +17,17 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import emailjs from '@emailjs/browser';
 
-// Get API base URL from the api service
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?
-  process.env.EXPO_PUBLIC_API_URL :
-  'https://donaro-backend.vercel.app/api';
+// Get API base URL from environment variables
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://donaro-production.up.railway.app/api';
+
+// EmailJS Configuration - Replace with your actual credentials
+const EMAILJS_CONFIG = {
+  SERVICE_ID: 'service_0zt6x89',     // Get from EmailJS dashboard
+  TEMPLATE_ID: 'template_oe1jicm',   // Get from EmailJS dashboard
+  PUBLIC_KEY: 'bpWDQy63wlpfsWHk7'      // Get from EmailJS dashboard
+};
 
 // Validate URL to prevent SSRF
 const isValidUrl = (url: string): boolean => {
@@ -45,6 +51,11 @@ const isValidUrl = (url: string): boolean => {
 
     // Allow Vercel deployments
     if (hostname.endsWith('.vercel.app') || hostname === 'donaro-backend.vercel.app') {
+      return true;
+    }
+
+    // Allow Railway deployments
+    if (hostname.endsWith('.railway.app') || hostname.includes('.up.railway.app') || hostname.includes('railway.app')) {
       return true;
     }
 
@@ -128,30 +139,63 @@ const SignupScreen = () => {
     
     setIsLoading(true);
     try {
-      // Generate OTP
+      // Generate OTP from backend
       const response = await fetch(`${API_BASE_URL}/otp/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }), // Changed from phone to email
+        body: JSON.stringify({ email }),
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
-        // Navigate to OTP verification screen
-        router.push({
-          pathname: '/otp-verification',
-          params: {
-            fullName,
-            email,
-            phone,
-            password,
-          }
-        });
+        const otpCode = result.otp;
+
+        // Send email using EmailJS
+        try {
+          await emailjs.send(
+            EMAILJS_CONFIG.SERVICE_ID,
+            EMAILJS_CONFIG.TEMPLATE_ID,
+            {
+              to_email: email,
+              otp_code: otpCode,
+              user_name: fullName,
+            },
+            EMAILJS_CONFIG.PUBLIC_KEY
+          );
+
+          // Navigate to OTP verification screen after successful email send
+          router.push({
+            pathname: '/otp-verification',
+            params: {
+              fullName,
+              email,
+              phone,
+              password,
+            }
+          });
+        } catch (emailError) {
+          console.error('EmailJS signup error:', emailError);
+          Alert.alert(
+            'Email Error',
+            'OTP generated but email sending failed. Please use the OTP shown in console or try again.'
+          );
+          // Still navigate to OTP screen for testing purposes
+          router.push({
+            pathname: '/otp-verification',
+            params: {
+              fullName,
+              email,
+              phone,
+              password,
+              otp: otpCode, // Pass OTP for testing
+            }
+          });
+        }
       } else {
-        Alert.alert('Error', result.error || 'Failed to send OTP. Please try again.');
+        Alert.alert('Error', result.error || 'Failed to generate OTP. Please try again.');
       }
     } catch (error: any) {
       console.error('Signup error:', error);
