@@ -1,8 +1,18 @@
+[build]
+builder = "nodejs"
+
+[deploy]
+startCommand = "npm start"
+
+[environments.production]
+variables = { NODE_ENV = "production" }
+
+# Simplified single-phase build for faster deployment
 [phases.setup]
-nixPkgs = ["nodejs-18_x", "openssl", "pkg-config", "python3"]
+cmds = ["echo 'Fast deployment starting...'"]
 
 [phases.install]
-cmds = ["npm ci --only=production"]
+cmds = ["npm ci --omit=dev --prefer-offline"]
 
-[start]
-cmd = "npm start"
+[phases.build]
+cmds = ["npx prisma generate --schema=./prisma/schema.prod.prisma", "npm run build"]
