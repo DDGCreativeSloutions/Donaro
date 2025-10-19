@@ -16,7 +16,10 @@ const app = express();
 const isVercel = process.env.NOW_REGION || process.env.VERCEL;
 
 // For Railway compatibility
-const isRailway = process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID;
+const isRailway = process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID || process.env.RAILWAY;
+
+// Production environment check
+const isProduction = process.env.NODE_ENV === 'production';
 
 // Trust proxy for Railway deployment to handle X-Forwarded-For headers properly
 if (isRailway) {
@@ -29,22 +32,31 @@ app.use(cors({
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
 
-    // Allow localhost for development
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      return callback(null, true);
-    }
+    // Production: Only allow specific origins
+    const allowedOrigins = [
+      'https://donaro-production.up.railway.app',
+      'https://your-production-domain.com', // Add your actual domain
+      'http://localhost:3000', // Development
+      'http://127.0.0.1:3000', // Development
+      'http://localhost:8081', // Expo development
+    ];
 
     // Allow Expo development tools
     if (origin.includes('.expo.') || origin.includes('expo.dev')) {
       return callback(null, true);
     }
 
-    // Allow Railway deployment domain
-    if (origin.includes('.railway.app') || origin.includes('.up.railway.app')) {
+    // Check if origin is in allowed list
+    if (allowedOrigins.some(allowed => origin.includes(allowed))) {
       return callback(null, true);
     }
 
-    // Allow all HTTPS origins for production
+    // Production: Reject other origins
+    if (isProduction) {
+      return callback(new Error('Not allowed by CORS policy'));
+    }
+
+    // Development: Allow all HTTPS origins
     if (origin.startsWith('https://')) {
       return callback(null, true);
     }
@@ -100,6 +112,23 @@ app.use('/api/*', (req, res, next) => {
   }
 });
 
+// SSE clients storage and broadcast function (defined early for use in routes)
+const sseClients = new Map();
+
+// Function to broadcast events to all SSE clients
+function broadcastSSE(data) {
+  const message = `data: ${JSON.stringify(data)}\n\n`;
+
+  sseClients.forEach((client, clientId) => {
+    try {
+      client.write(message);
+    } catch (error) {
+      console.error(`Error sending SSE to client ${clientId}:`, error);
+      sseClients.delete(clientId);
+    }
+  });
+}
+
 // Set SSE broadcast function for routes to use
 if (donationRoutes.setSSEBroadcast) {
   donationRoutes.setSSEBroadcast(broadcastSSE);
@@ -150,22 +179,6 @@ app.get('/api/events', (req, res) => {
   });
 });
 
-// Store SSE clients
-const sseClients = new Map();
-
-// Function to broadcast events to all SSE clients
-function broadcastSSE(data) {
-  const message = `data: ${JSON.stringify(data)}\n\n`;
-
-  sseClients.forEach((client, clientId) => {
-    try {
-      client.write(message);
-    } catch (error) {
-      console.error(`Error sending SSE to client ${clientId}:`, error);
-      sseClients.delete(clientId);
-    }
-  });
-}
 
 // Serve admin panel index.html for root route
 app.get('/', (req, res) => {
@@ -272,7 +285,10 @@ if (!isVercel) {
   const PORT = process.env.PORT || 3001;
 
   server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`🚀 Donaro Backend Server is running on port ${PORT}`);
+    console.log(`📊 Environment: ${isProduction ? 'Production' : 'Development'}`);
+    console.log(`🌐 CORS: ${isProduction ? 'Restricted' : 'Permissive'}`);
+    console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
   });
 
   module.exports = { app, io, server };
@@ -285,4 +301,18 @@ if (!isVercel) {
   // But we still make the app available for routes to potentially use
   app.set('io', null);
   module.exports = app;
+}
+
+// Production error handling
+if (isProduction) {
+  app.use((err, req, res, next) => {
+    console.error('Production Error:', err);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: 'Something went wrong on our end'
+    });
+  });
+
+  // Trust proxy for Railway
+  app.set('trust proxy', 1);
 }

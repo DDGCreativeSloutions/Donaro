@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "build": "prisma generate --schema=./prisma/schema.prod.prisma",
+    "build": "prisma generate --schema=./prisma/schema.prod.prisma && prisma migrate deploy --schema=./prisma/schema.prod.prisma",
     "vercel-build": "npm run build",
     "prebuild": "prisma generate --schema=./prisma/schema.prod.prisma",
     "postinstall": "echo 'Skipping postinstall script to prevent hanging'",
@@ -26,6 +26,7 @@
     "@prisma/client": "^5.22.0",
     "@prisma/extension-accelerate": "^1.2.1",
     "bcrypt": "^5.1.1",
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",

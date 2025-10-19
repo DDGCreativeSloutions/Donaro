@@ -1,13 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 
 // Create test database instance
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: 'file:./test.db'
-    }
-  }
-});
+const prisma = new PrismaClient();
 
 // Setup and teardown for tests
 beforeAll(async () => {
@@ -33,6 +27,7 @@ global.testPrisma = prisma;
 // Mock environment variables
 process.env.JWT_SECRET = 'test-jwt-secret';
 process.env.NODE_ENV = 'test';
+process.env.DATABASE_URL = 'file:./test.db';
 
 // Global test timeout
 jest.setTimeout(30000);

@@ -9,9 +9,7 @@ const router = express.Router();
 const otpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // limit each IP to 5 requests per windowMs
-  message: {
-    error: 'Too many OTP requests, please try again later.'
-  },
+  message: 'Too many OTP requests, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -119,7 +117,7 @@ router.post('/verify', async (req, res) => {
     }
     
     // Delete used OTP
-    await prisma.oTP.delete({
+    await prisma.OTP.delete({
       where: { email: email }
     });
     

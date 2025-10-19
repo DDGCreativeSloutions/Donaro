@@ -4,17 +4,14 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const authRoutes = require('../../src/routes/auth');
 
-// Mock Prisma
-const mockPrisma = {
+// Mock the db module
+jest.mock('../../src/utils/db', () => ({
   user: {
     findUnique: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
   },
-};
-
-// Mock the db module
-jest.mock('../../src/utils/db', () => mockPrisma);
+}));
 
 const app = express();
 app.use(express.json());
@@ -45,8 +42,8 @@ describe('Auth Routes', () => {
         totalDonations: 0
       };
 
-      mockPrisma.user.findUnique.mockResolvedValue(null);
-      mockPrisma.user.create.mockResolvedValue(mockUser);
+      mockDb.user.findUnique.mockResolvedValue(null);
+      mockDb.user.create.mockResolvedValue(mockUser);
 
       const response = await request(app)
         .post('/auth/register')
@@ -67,7 +64,7 @@ describe('Auth Routes', () => {
         password: 'password123'
       };
 
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'existing-user' });
+      mockDb.user.findUnique.mockResolvedValue({ id: 'existing-user' });
 
       const response = await request(app)
         .post('/auth/register')
@@ -144,7 +141,7 @@ describe('Auth Routes', () => {
         totalDonations: 5
       };
 
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockDb.user.findUnique.mockResolvedValue(mockUser);
 
       const response = await request(app)
         .post('/auth/login')
@@ -162,7 +159,7 @@ describe('Auth Routes', () => {
         password: 'password123'
       };
 
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockDb.user.findUnique.mockResolvedValue(null);
 
       const response = await request(app)
         .post('/auth/login')
@@ -185,7 +182,7 @@ describe('Auth Routes', () => {
         password: hashedPassword
       };
 
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockDb.user.findUnique.mockResolvedValue(mockUser);
 
       const response = await request(app)
         .post('/auth/login')
@@ -211,7 +208,7 @@ describe('Auth Routes', () => {
         isAdmin: true
       };
 
-      mockPrisma.user.findUnique.mockResolvedValue(mockAdmin);
+      mockDb.user.findUnique.mockResolvedValue(mockAdmin);
 
       const response = await request(app)
         .post('/auth/login')
@@ -238,8 +235,8 @@ describe('Auth Routes', () => {
         password: hashedPassword
       };
 
-      mockPrisma.user.findUnique.mockResolvedValue(null);
-      mockPrisma.user.create.mockResolvedValue(mockUser);
+      mockDb.user.findUnique.mockResolvedValue(null);
+      mockDb.user.create.mockResolvedValue(mockUser);
 
       const response = await request(app)
         .post('/auth/register')
@@ -273,7 +270,7 @@ describe('Auth Routes', () => {
         password: 'wrongpassword'
       };
 
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockDb.user.findUnique.mockResolvedValue(null);
 
       // Make multiple failed login attempts
       for (let i = 0; i < 5; i++) {

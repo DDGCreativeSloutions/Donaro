@@ -9,7 +9,7 @@ import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'reac
 import emailjs from '@emailjs/browser';
 
 // Get API base URL from environment variables
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://donaro-production.up.railway.app/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // EmailJS Configuration - Replace with your actual credentials
 const EMAILJS_CONFIG = {

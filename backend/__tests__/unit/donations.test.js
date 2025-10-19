@@ -4,8 +4,8 @@ const jwt = require('jsonwebtoken');
 const donationRoutes = require('../../src/routes/donations');
 const authMiddleware = require('../../src/utils/authMiddleware');
 
-// Mock Prisma
-const mockPrisma = {
+// Mock the db module
+jest.mock('../../src/utils/db', () => ({
   donation: {
     create: jest.fn(),
     findMany: jest.fn(),
@@ -17,10 +17,7 @@ const mockPrisma = {
     findUnique: jest.fn(),
     update: jest.fn(),
   },
-};
-
-// Mock the db module
-jest.mock('../../src/utils/db', () => mockPrisma);
+}));
 
 const app = express();
 app.use(express.json());
@@ -67,9 +64,9 @@ describe('Donation Routes', () => {
         credits: 100
       };
 
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.donation.create.mockResolvedValue(mockDonation);
-      mockPrisma.user.update.mockResolvedValue({
+      mockDb.user.findUnique.mockResolvedValue(mockUser);
+      mockDb.donation.create.mockResolvedValue(mockDonation);
+      mockDb.user.update.mockResolvedValue({
         ...mockUser,
         totalDonations: 1
       });
@@ -155,9 +152,9 @@ describe('Donation Routes', () => {
       const mockUser = { id: 'user-1', totalDonations: 0 };
       const mockDonation = { ...foodDonation, id: 'donation-1', credits: 100 };
 
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.donation.create.mockResolvedValue(mockDonation);
-      mockPrisma.user.update.mockResolvedValue(mockUser);
+      mockDb.user.findUnique.mockResolvedValue(mockUser);
+      mockDb.donation.create.mockResolvedValue(mockDonation);
+      mockDb.user.update.mockResolvedValue(mockUser);
 
       const token = createAuthToken();
       const response = await request(app)
@@ -187,7 +184,7 @@ describe('Donation Routes', () => {
         }
       ];
 
-      mockPrisma.donation.findMany.mockResolvedValue(mockDonations);
+      mockDb.donation.findMany.mockResolvedValue(mockDonations);
 
       const token = createAuthToken();
       const response = await request(app)
@@ -200,7 +197,7 @@ describe('Donation Routes', () => {
     });
 
     test('should return empty array for user with no donations', async () => {
-      mockPrisma.donation.findMany.mockResolvedValue([]);
+      mockDb.donation.findMany.mockResolvedValue([]);
 
       const token = createAuthToken();
       const response = await request(app)
@@ -241,10 +238,10 @@ describe('Donation Routes', () => {
         status: 'approved'
       };
 
-      mockPrisma.donation.findUnique.mockResolvedValue(mockDonation);
-      mockPrisma.donation.update.mockResolvedValue(updatedDonation);
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.user.update.mockResolvedValue({
+      mockDb.donation.findUnique.mockResolvedValue(mockDonation);
+      mockDb.donation.update.mockResolvedValue(updatedDonation);
+      mockDb.user.findUnique.mockResolvedValue(mockUser);
+      mockDb.user.update.mockResolvedValue({
         ...mockUser,
         totalCredits: 100,
         lifetimeCredits: 100,
@@ -274,8 +271,8 @@ describe('Donation Routes', () => {
         status: 'rejected'
       };
 
-      mockPrisma.donation.findUnique.mockResolvedValue(mockDonation);
-      mockPrisma.donation.update.mockResolvedValue(updatedDonation);
+      mockDb.donation.findUnique.mockResolvedValue(mockDonation);
+      mockDb.donation.update.mockResolvedValue(updatedDonation);
 
       const token = createAuthToken('admin-1', 'admin@donaro.com');
       const response = await request(app)
@@ -310,7 +307,7 @@ describe('Donation Routes', () => {
     });
 
     test('should handle non-existent donation', async () => {
-      mockPrisma.donation.findUnique.mockResolvedValue(null);
+      mockDb.donation.findUnique.mockResolvedValue(null);
 
       const token = createAuthToken('admin-1', 'admin@donaro.com');
       const response = await request(app)
@@ -330,7 +327,7 @@ describe('Donation Routes', () => {
         { id: 'donation-2', status: 'pending', title: 'Clothes Donation' }
       ];
 
-      mockPrisma.donation.findMany.mockResolvedValue(mockPendingDonations);
+      mockDb.donation.findMany.mockResolvedValue(mockPendingDonations);
 
       const token = createAuthToken('admin-1', 'admin@donaro.com');
       const response = await request(app)
@@ -347,7 +344,7 @@ describe('Donation Routes', () => {
         { id: 'donation-1', status: 'approved', title: 'Food Donation' }
       ];
 
-      mockPrisma.donation.findMany.mockResolvedValue(mockApprovedDonations);
+      mockDb.donation.findMany.mockResolvedValue(mockApprovedDonations);
 
       const token = createAuthToken();
       const response = await request(app)
@@ -391,8 +388,8 @@ describe('Donation Routes', () => {
         createdAt: new Date()
       });
 
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
-      mockPrisma.donation.findMany.mockResolvedValue(recentDonations);
+      mockDb.user.findUnique.mockResolvedValue(mockUser);
+      mockDb.donation.findMany.mockResolvedValue(recentDonations);
 
       const token = createAuthToken();
       const response = await request(app)

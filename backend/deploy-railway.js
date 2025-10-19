@@ -1,88 +1,109 @@
 #!/usr/bin/env node
 
-// Railway deployment helper script
+/**
+ * Railway Deployment Script for Donaro Backend
+ * This script handles the deployment process for Railway
+ */
+
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🚂 Preparing Donaro backend for Railway deployment...\n');
+console.log('🚂 Starting Railway deployment for Donaro Backend...\n');
 
+// Check if we're in production
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction) {
+  console.log('📋 Production deployment checklist:');
+
+  // Check for required environment variables
+  const requiredEnvVars = [
+    'DATABASE_URL',
+    'JWT_SECRET',
+    'EMAIL_USER',
+    'EMAIL_PASS'
+  ];
+
+  // Validate EmailJS configuration
+  if (process.env.EMAILJS_SERVICE_ID === 'service_0zt6x89') {
+    console.log('✅ EmailJS service configured');
+  }
+
+  // Check if using Prisma Accelerate
+  const isPrismaAccelerate = process.env.DATABASE_URL && process.env.DATABASE_URL.includes('accelerate.prisma-data.net');
+
+  if (isPrismaAccelerate) {
+    console.log('✅ Using Prisma Accelerate for enhanced database performance');
+  } else {
+    console.log('✅ Using direct PostgreSQL connection');
+    requiredEnvVars.push('DIRECT_URL');
+  }
+
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+  if (missingVars.length > 0) {
+    console.error('❌ Missing required environment variables:');
+    missingVars.forEach(varName => console.error(`   - ${varName}`));
+    console.error('\nPlease set these variables in your Railway dashboard.');
+    process.exit(1);
+  }
+
+  console.log('✅ All required environment variables are set');
+  console.log('✅ Production mode confirmed');
+}
+
+// Generate Prisma client with production schema
+console.log('\n🔧 Generating Prisma client...');
 try {
-  // Check if we're in the project root (has backend folder)
-  if (!fs.existsSync('backend/package.json')) {
-    console.error('❌ Error: Please run this script from the project root directory');
-    process.exit(1);
-  }
-
-  // Check if railway.toml exists
-  if (!fs.existsSync('backend/railway.toml')) {
-    console.error('❌ Error: backend/railway.toml configuration file not found');
-    console.log('✅ Creating backend/railway.toml...');
-    fs.writeFileSync('backend/railway.toml', `[build]
-builder = "nixpacks"
-
-[deploy]
-startCommand = "npm start"
-healthcheckPath = "/api/health"
-restartPolicyType = "ON_FAILURE"
-
-[environments]
-production = { variables = { NODE_ENV = "production" } }
-`);
-  }
-
-  console.log('✅ Found/created backend/railway.toml configuration');
-
-  // Check if nixpacks.toml exists
-  if (!fs.existsSync('backend/nixpacks.toml')) {
-    console.log('✅ Creating backend/nixpacks.toml...');
-    fs.writeFileSync('backend/nixpacks.toml', `[phases.setup]
-nixPkgs = ["nodejs-18_x", "openssl", "pkg-config", "python3"]
-
-[phases.install]
-cmds = ["npm ci --only=production"]
-
-[start]
-cmd = "npm start"
-`);
-  }
-
-  console.log('✅ Found/created backend/nixpacks.toml configuration');
-
-  // Check if server.js exists
-  if (!fs.existsSync('backend/src/server.js')) {
-    console.error('❌ Error: backend/src/server.js not found');
-    process.exit(1);
-  }
-
-  console.log('✅ Found backend/src/server.js file');
-
-  // Check if API handler exists
-  if (!fs.existsSync('backend/api/index.js')) {
-    console.error('❌ Error: backend/api/index.js not found');
-    process.exit(1);
-  }
-
-  console.log('✅ Found backend/api/index.js file');
-
-  // Check if prisma schema exists
-  if (!fs.existsSync('backend/prisma/schema.prisma')) {
-    console.error('❌ Error: backend/prisma/schema.prisma not found');
-    process.exit(1);
-  }
-
-  console.log('✅ Found Prisma schema');
-
-  console.log('\n🎉 Railway deployment preparation completed successfully!');
-  console.log('\n📋 Next steps for Railway deployment:');
-  console.log('1. Install Railway CLI: npm install -g @railway/cli');
-  console.log('2. Login to Railway: railway login');
-  console.log('3. Initialize project: railway init (in backend directory)');
-  console.log('4. Deploy: railway up');
-  console.log('5. Run production migrations: railway run npm run migrate:prod');
-  console.log('\n🔗 Railway Dashboard: https://railway.app');
-
+  execSync('npx prisma generate --schema=./prisma/schema.prod.prisma', {
+    stdio: 'inherit',
+    cwd: path.join(__dirname)
+  });
+  console.log('✅ Prisma client generated successfully');
 } catch (error) {
-  console.error('❌ Error during deployment preparation:', error.message);
+  console.error('❌ Failed to generate Prisma client:', error.message);
   process.exit(1);
+}
+
+// Run database migrations
+if (isProduction) {
+  console.log('\n🗄️ Running database migrations...');
+
+  try {
+    if (isPrismaAccelerate) {
+      console.log('🚀 Using Prisma Accelerate - migrations handled by Prisma service');
+      // For Prisma Accelerate, we still need to generate the client
+      execSync('npx prisma generate --schema=./prisma/schema.prod.prisma', {
+        stdio: 'inherit',
+        cwd: path.join(__dirname)
+      });
+      console.log('✅ Prisma client generated for Accelerate');
+    } else {
+      // For direct PostgreSQL, run migrations
+      execSync('npx prisma migrate deploy --schema=./prisma/schema.prod.prisma', {
+        stdio: 'inherit',
+        cwd: path.join(__dirname)
+      });
+      console.log('✅ Database migrations completed');
+    }
+  } catch (error) {
+    console.error('❌ Database migration failed:', error.message);
+    process.exit(1);
+  }
+}
+
+console.log('\n🎉 Railway deployment preparation completed!');
+console.log('📝 Next steps:');
+console.log('   1. Push your code to trigger automatic deployment');
+console.log('   2. Monitor deployment logs in Railway dashboard');
+console.log('   3. Check health endpoint: /api/health');
+console.log('   4. Update environment variables in Railway dashboard if needed');
+
+if (isProduction) {
+  console.log('\n🔒 Production reminders:');
+  console.log('   - Update JWT_SECRET with a secure random string');
+  console.log('   - Configure CORS origins for your domain');
+  console.log('   - Set up monitoring and logging');
+  console.log('   - Configure email service credentials');
 }

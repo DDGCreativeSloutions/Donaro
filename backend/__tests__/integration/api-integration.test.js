@@ -2,13 +2,10 @@ const request = require('supertest');
 const { app, server } = require('../../src/server');
 const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: 'file:./test-integration.db'
-    }
-  }
-});
+const prisma = new PrismaClient();
+
+// Set test database URL
+process.env.DATABASE_URL = 'file:./test-integration.db';
 
 describe('API Integration Tests', () => {
   let authToken;

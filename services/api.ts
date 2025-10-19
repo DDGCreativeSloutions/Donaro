@@ -1,5 +1,5 @@
 // Real API service connecting to backend with Prisma
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // Validate URL to prevent SSRF
 const isValidUrl = (url: string): boolean => {
@@ -22,9 +22,9 @@ const isValidUrl = (url: string): boolean => {
     }
 
     // Allow Vercel deployments
-    if (hostname.endsWith('.vercel.app') || hostname === 'donaro-backend.vercel.app') {
-      return true;
-    }
+    // if (hostname.endsWith('.vercel.app') || hostname === 'donaro-backend.vercel.app') {
+    //   return true;
+    // }
 
     // Allow Railway deployments
     if (hostname.endsWith('.railway.app') || hostname.includes('.up.railway.app')) {
@@ -130,7 +130,7 @@ class ApiService {
     // Initialize socket connection when token is set (only if not Vercel deployment)
     if (token && !this.socket) {
       // Check if we're running against a Vercel deployment
-      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
+      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001/api';
       const isVercelDeployment = API_URL.includes('.vercel.app') || API_URL.includes('donaro-backend.vercel.app');
 
       if (!isVercelDeployment) {
@@ -145,17 +145,10 @@ class ApiService {
     if (!this.token) return;
 
     // Check if we're running against a Vercel deployment (Socket.IO not supported)
-    const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001';
-    const isVercelDeployment = API_URL.includes('.vercel.app') || API_URL.includes('donaro-backend.vercel.app');
-
-    if (isVercelDeployment) {
-      console.log('Running against Vercel deployment - Socket.IO disabled, using polling fallback');
-      this.socket = null;
-      return;
-    }
+    const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001/api';
 
     try {
-      this.socket = io(API_URL, {
+      this.socket = io(API_URL.replace('/api', ''), {
         auth: {
           token: this.token
         }
