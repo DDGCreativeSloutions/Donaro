@@ -17,17 +17,16 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import emailjs from '@emailjs/browser';
+// EmailJS removed - backend now handles all email sending
 
 // Get API base URL from environment variables
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://donaro-production.up.railway.app/api';
 
-// EmailJS Configuration - Replace with your actual credentials
-const EMAILJS_CONFIG = {
-  SERVICE_ID: 'service_undmw4c',     // Updated EmailJS service ID
-  TEMPLATE_ID: 'template_mkx7s1d',   // Updated EmailJS template ID
-  PUBLIC_KEY: 'bpWDQy63wlpfsWHk7'      // Get from EmailJS dashboard
-};
+// Debug logging for mobile app
+console.log('🚀 Donaro Mobile App Started');
+console.log('📱 Environment:', __DEV__ ? 'Development' : 'Production');
+console.log('🌐 API Base URL:', API_BASE_URL);
+console.log('📧 Email Service: Backend (MailerSend)');
 
 // Validate URL to prevent SSRF
 const isValidUrl = (url: string): boolean => {
@@ -150,68 +149,18 @@ const SignupScreen = () => {
       const result = await response.json();
 
       if (result.success) {
-        const otpCode = result.otp;
+        console.log('✅ OTP generated and email sent successfully from backend');
 
-        // Send email using EmailJS
-        try {
-          console.log('EmailJS Signup Debug Info:', {
-            serviceId: EMAILJS_CONFIG.SERVICE_ID,
-            templateId: EMAILJS_CONFIG.TEMPLATE_ID,
-            toEmail: email,
-            otpCode: otpCode,
-            userName: fullName,
-            publicKey: EMAILJS_CONFIG.PUBLIC_KEY
-          });
-
-          await emailjs.send(
-            EMAILJS_CONFIG.SERVICE_ID,
-            EMAILJS_CONFIG.TEMPLATE_ID,
-            {
-              to_email: email,
-              otp: otpCode,
-              user_name: fullName,
-              // Also try with different variable names to match template
-              otp_code: otpCode,
-            },
-            EMAILJS_CONFIG.PUBLIC_KEY
-          );
-
-          // Navigate to OTP verification screen after successful email send
-          router.push({
-            pathname: '/otp-verification',
-            params: {
-              fullName,
-              email,
-              phone,
-              password,
-            }
-          });
-        } catch (emailError: any) {
-          console.error('EmailJS signup error:', emailError);
-
-          // Check if it's a Gmail authentication error
-          if (emailError.text && emailError.text.includes('Invalid grant')) {
-            Alert.alert(
-              'Email Service Error',
-              'Email service needs reconfiguration. Please contact support.',
-              [
-                { text: 'OK' }
-              ]
-            );
-          } else {
-            Alert.alert(
-              'Email Service Issue',
-              'We\'re having trouble sending the verification email. Please try again in a few minutes or contact support.',
-              [
-                { text: 'Try Again', onPress: () => handleSignup() },
-                { text: 'Continue Anyway', onPress: () => router.push({
-                  pathname: '/otp-verification',
-                  params: { fullName, email, phone, password }
-                })}
-              ]
-            );
+        // Navigate to OTP verification screen after successful OTP generation
+        router.push({
+          pathname: '/otp-verification',
+          params: {
+            fullName,
+            email,
+            phone,
+            password,
           }
-        }
+        });
       } else {
         Alert.alert('Error', result.error || 'Failed to generate OTP. Please try again.');
       }

@@ -6,17 +6,10 @@ import { apiService } from '@/services/api';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import emailjs from '@emailjs/browser';
+console.log('📧 EmailJS removed - backend now handles email sending directly');
 
 // Get API base URL from environment variables
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://donaro-production.up.railway.app/api';
-
-// EmailJS Configuration - Replace with your actual credentials
-const EMAILJS_CONFIG = {
-  SERVICE_ID: 'service_undmw4c',     // Updated EmailJS service ID
-  TEMPLATE_ID: 'template_mkx7s1d',   // Updated EmailJS template ID
-  PUBLIC_KEY: 'bpWDQy63wlpfsWHk7'      // Get from EmailJS dashboard
-};
 
 // Validate URL to prevent SSRF
 const isValidUrl = (url: string): boolean => {
@@ -215,63 +208,9 @@ const OTPVerificationScreen = () => {
       const result = await response.json();
 
       if (result.success) {
-        const newOtpCode = result.otp;
-
-        // Send email using EmailJS
-        try {
-          console.log('EmailJS Debug Info:', {
-            serviceId: EMAILJS_CONFIG.SERVICE_ID,
-            templateId: EMAILJS_CONFIG.TEMPLATE_ID,
-            toEmail: email,
-            otpCode: newOtpCode,
-            userName: fullName,
-            publicKey: EMAILJS_CONFIG.PUBLIC_KEY
-          });
-
-          await emailjs.send(
-            EMAILJS_CONFIG.SERVICE_ID,
-            EMAILJS_CONFIG.TEMPLATE_ID,
-            {
-              to_email: email,
-              otp: newOtpCode,
-              user_name: fullName,
-              // Also try with different variable names to match template
-              otp_code: newOtpCode,
-            },
-            EMAILJS_CONFIG.PUBLIC_KEY
-          );
-
-          Alert.alert('Success', 'New OTP has been sent to your email address.');
-          setTimer(30); // Reset timer
-        } catch (emailError: any) {
-          console.error('EmailJS Debug Info:', {
-            error: emailError,
-            serviceId: EMAILJS_CONFIG.SERVICE_ID,
-            templateId: EMAILJS_CONFIG.TEMPLATE_ID,
-            errorText: emailError?.text || 'No error text'
-          });
-
-          // More specific error diagnosis
-          if (emailError.text && emailError.text.includes('Invalid grant')) {
-            Alert.alert(
-              'Gmail Authentication Error',
-              'Your Gmail account needs to be reconnected in EmailJS. Please update your EmailJS template and reconnect Gmail.',
-              [
-                { text: 'OK' }
-              ]
-            );
-          } else {
-            Alert.alert(
-              'EmailJS Configuration Issue',
-              'Template variable error. Check EmailJS dashboard - use {{otp}} not ${otp}. Service ID: service_undmw4c, Template ID: template_oe1jicm',
-              [
-                { text: 'Try Again', onPress: () => handleResendOTP() },
-                { text: 'OK' }
-              ]
-            );
-          }
-          setTimer(30);
-        }
+        console.log('✅ New OTP generated and email sent successfully from backend');
+        Alert.alert('Success', 'New OTP has been sent to your email address.');
+        setTimer(30); // Reset timer
       } else {
         Alert.alert('Error', result.error || 'Failed to generate OTP. Please try again.');
       }

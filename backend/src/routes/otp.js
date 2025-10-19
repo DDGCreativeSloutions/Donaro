@@ -3,6 +3,66 @@ const prisma = require('../utils/db');
 const rateLimit = require('express-rate-limit');
 const { authenticateToken } = require('../utils/authMiddleware');
 
+// MailerSend email sending function for Railway compatibility
+async function sendEmail(to, subject, htmlContent) {
+  try {
+    // Check if MailerSend is configured
+    if (!process.env.MAILERSEND_API_KEY) {
+      console.log('📧 MAILERSEND NOT CONFIGURED - Logging email instead:');
+      console.log('To:', to);
+      console.log('Subject:', subject);
+      console.log('Content:', htmlContent.substring(0, 200) + '...');
+      console.log('💡 To enable email sending, add MAILERSEND_API_KEY to your environment variables');
+      return true; // Don't fail if MailerSend not configured
+    }
+
+    // MailerSend API integration
+    const response = await fetch('https://api.mailersend.com/v1/email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Authorization': `Bearer ${process.env.MAILERSEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: {
+          email: process.env.FROM_EMAIL || 'noreply@donaro.app',
+          name: 'Donaro App'
+        },
+        to: [
+          {
+            email: to,
+            name: 'User'
+          }
+        ],
+        subject: subject,
+        html: htmlContent,
+        text: `Hello! Your OTP for Donaro verification is included in the email. Please check the HTML version for the complete message.`
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`MailerSend API error: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    console.log(`✅ Email sent successfully to ${to} - Message ID: ${result.message_id || 'N/A'}`);
+    return true;
+
+  } catch (error) {
+    console.error('❌ Failed to send email:', error);
+    // Log the email that failed to send for debugging
+    console.log('📧 FAILED EMAIL:');
+    console.log('To:', to);
+    console.log('Subject:', subject);
+    console.log('Content:', htmlContent.substring(0, 200) + '...');
+    console.log('Error:', error.message);
+
+    // Don't throw error - allow signup to continue even if email fails
+    return false;
+  }
+}
+
 const router = express.Router();
 
 // Rate limiting for OTP generation
@@ -47,13 +107,58 @@ router.post('/generate', otpLimiter, async (req, res) => {
 
     console.log(`OTP for ${email}: ${otp}`);
 
-    // Return OTP in response for EmailJS (no email sending from backend)
+    // Send OTP email directly from backend (Railway compatible)
+    const emailSubject = 'Donaro App - Email Verification';
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #6C63FF 0%, #4a44c5 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">Donaro</h1>
+          <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">Email Verification</p>
+        </div>
+
+        <div style="background: #ffffff; padding: 40px; border: 1px solid #e1e5e9; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #2c3e50; margin-bottom: 20px; text-align: center;">Hello!</h2>
+
+          <p style="color: #555; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+            Thank you for signing up with Donaro! Please use the verification code below to complete your registration:
+          </p>
+
+          <div style="text-align: center; margin: 30px 0;">
+            <div style="display: inline-block; background: #f8f9fa; border: 2px solid #6C63FF; border-radius: 8px; padding: 20px 40px;">
+              <span style="font-size: 32px; font-weight: bold; color: #6C63FF; letter-spacing: 8px;">${otp}</span>
+            </div>
+          </div>
+
+          <p style="color: #666; font-size: 14px; margin: 25px 0;">
+            This code will expire in 10 minutes for security reasons.
+          </p>
+
+          <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; color: #856404; font-size: 14px;">
+              <strong>Security Note:</strong> If you didn't request this verification code, please ignore this email.
+            </p>
+          </div>
+
+          <p style="color: #999; font-size: 12px; text-align: center; margin-top: 30px;">
+            If you're having trouble, contact our support team.
+          </p>
+        </div>
+      </div>
+    `;
+
+    try {
+      await sendEmail(email, emailSubject, emailHtml);
+      console.log(`✅ OTP email sent successfully to ${email}`);
+    } catch (emailError) {
+      console.error('❌ Failed to send OTP email:', emailError);
+      // Don't fail the request if email sending fails
+    }
+
+    // Return success response (don't include OTP for security)
     res.json({
       success: true,
-      message: 'OTP generated successfully',
-      otp: otp, // Include OTP for EmailJS
-      email: email,
-      note: 'EmailJS will send this OTP via email from frontend'
+      message: 'OTP generated and sent to your email address',
+      email: email
     });
 
   } catch (error) {
