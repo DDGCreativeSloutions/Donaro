@@ -32,7 +32,7 @@ router.post('/generate', otpLimiter, async (req, res) => {
     // Save OTP to database with expiration (10 minutes)
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    await prisma.oTP.upsert({
+    await prisma.OTP.upsert({
       where: { email: email },
       update: {
         code: otp,
@@ -83,7 +83,7 @@ router.post('/verify', async (req, res) => {
     }
     
     // Find OTP record for this email
-    const otpRecord = await prisma.oTP.findUnique({
+    const otpRecord = await prisma.OTP.findUnique({
       where: { email: email }
     });
     
@@ -103,7 +103,7 @@ router.post('/verify', async (req, res) => {
     // Check if too many failed attempts
     if (updatedAttempts > 3) {
       // Delete OTP after too many failed attempts
-      await prisma.oTP.delete({
+      await prisma.OTP.delete({
         where: { email: email }
       });
       return res.status(400).json({ error: 'Too many failed attempts. Please request a new OTP.' });
@@ -111,7 +111,7 @@ router.post('/verify', async (req, res) => {
     
     // Update attempts if verification fails
     if (otpRecord.code !== otp) {
-      await prisma.oTP.update({
+      await prisma.OTP.update({
         where: { email: email },
         data: { attempts: updatedAttempts }
       });
