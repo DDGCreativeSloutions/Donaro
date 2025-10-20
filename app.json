@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Donaro",
-    "slug": "Donaro",
+    "slug": "donaro",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -53,7 +53,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "a51e3ddd-e509-40d9-9165-4389bfe6289c"
+        "projectId": "9537a97d-afaa-437c-b281-702e37898e4c"
       }
     }
   }
