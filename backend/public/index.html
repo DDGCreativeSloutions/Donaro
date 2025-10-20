@@ -128,6 +128,93 @@
             transition: all 0.3s ease;
         }
         
+        /* Bottom Navigation Styles */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white; /* Changed to white to match the rest of the page */
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            z-index: 1000;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            border-top: 1px solid #eee;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #777; /* Default color */
+            font-size: 0.7rem;
+            cursor: pointer;
+            padding: 5px 5px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .nav-item i {
+            font-size: 1.2rem;
+            margin-bottom: 3px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-item.active {
+            color: #6C63FF; /* Platform color for active state */
+            font-weight: bold;
+        }
+        
+        .nav-item:hover {
+            color: #6C63FF; /* Platform color on hover */
+            transform: translateY(-2px);
+        }
+        
+        /* Badge for rejected donations count */
+        .nav-badge {
+            position: absolute;
+            top: 0;
+            right: 20%;
+            background: #EF4444; /* Red color for alerts */
+            color: white;
+            font-size: 0.6rem;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translate(50%, -50%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: translate(50%, -50%) scale(1);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+            50% {
+                transform: translate(50%, -50%) scale(1.1);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            }
+            100% {
+                transform: translate(50%, -50%) scale(1);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+        }
+        
+        /* Adjust main content padding for mobile with bottom nav */
+        @media (max-width: 992px) {
+            .main-content {
+                margin-left: 0;
+                padding-bottom: 70px; /* Space for bottom nav */
+            }
+        }
+        
         .stats-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -512,59 +599,6 @@
             flex-wrap: wrap;
         }
         
-        /* Image Modal Styles */
-        .image-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 3000;
-            padding: 1rem;
-        }
-
-        .image-modal-content {
-            position: relative;
-            max-width: 90%;
-            max-height: 90%;
-        }
-
-        .image-modal-content img {
-            max-width: 100%;
-            max-height: 100%;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .image-modal-close {
-            position: absolute;
-            top: -15px;
-            right: -15px;
-            background: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 1.2rem;
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .image-modal-title {
-            color: white;
-            text-align: center;
-            margin-bottom: 1rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
         /* Toast notification styles */
         .toast {
             position: fixed;
@@ -620,14 +654,28 @@
             .main-content {
                 margin-left: 0;
                 width: 100%;
+                padding-bottom: 70px; /* Space for bottom nav */
             }
             
             .menu-toggle {
-                display: block;
+                display: none; /* Hide on mobile since we have bottom nav */
             }
             
             .sidebar-overlay.active {
                 display: block;
+            }
+            
+            /* Adjust bottom nav for smaller screens */
+            .bottom-nav {
+                padding: 8px 0;
+            }
+            
+            .nav-item {
+                font-size: 0.65rem;
+            }
+            
+            .nav-item i {
+                font-size: 1rem;
             }
         }
         
@@ -647,6 +695,7 @@
             
             .main-content {
                 padding: 1rem;
+                padding-bottom: 70px; /* Space for bottom nav */
             }
             
             .stats-container {
@@ -764,6 +813,19 @@
                 flex-direction: column;
             }
             
+            /* Further adjust bottom nav for very small screens */
+            .bottom-nav {
+                padding: 6px 0;
+            }
+            
+            .nav-item {
+                font-size: 0.6rem;
+            }
+            
+            .nav-item i {
+                font-size: 0.9rem;
+            }
+            
             .toast {
                 right: 10px;
                 left: 10px;
@@ -793,7 +855,6 @@
                 <li class="active" onclick="loadDashboard()"><i class="fas fa-tachometer-alt"></i> Dashboard</li>
                 <li onclick="loadPendingDonations()"><i class="fas fa-hourglass-start"></i> Pending Donations</li>
                 <li onclick="loadApprovedDonations()"><i class="fas fa-check-circle"></i> Approved Donations</li>
-                <li onclick="loadRejectedDonations()"><i class="fas fa-times-circle"></i> Rejected Donations</li>
                 <li onclick="loadPendingWithdrawals()"><i class="fas fa-money-bill-wave"></i> Pending Withdrawals</li>
                 <li onclick="loadUsers()"><i class="fas fa-users"></i> Users</li>
                 <li onclick="loadReports()"><i class="fas fa-chart-bar"></i> Reports</li>
@@ -816,6 +877,30 @@
                 <button class="btn btn-primary" onclick="login()" style="width: 100%;">Login</button>
                 <div id="login-error" class="error-message"></div>
             </div>
+        </div>
+    </div>
+    
+    <!-- Bottom Navigation for Mobile -->
+    <div class="bottom-nav" id="bottom-nav" style="display: none;">
+        <div class="nav-item active" onclick="loadDashboard()">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+        </div>
+        <div class="nav-item" onclick="loadPendingDonations()">
+            <i class="fas fa-hourglass-start"></i>
+            <span>Pending</span>
+        </div>
+        <div class="nav-item" onclick="loadApprovedDonations()">
+            <i class="fas fa-check-circle"></i>
+            <span>Approved</span>
+        </div>
+        <div class="nav-item" onclick="loadUsers()">
+            <i class="fas fa-users"></i>
+            <span>Users</span>
+        </div>
+        <div class="nav-item" onclick="loadSettings()">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
         </div>
     </div>
     
@@ -848,13 +933,38 @@
             const sidebarItems = document.querySelectorAll('.sidebar li');
             
             // Initialize sidebar navigation
-            sidebarItems.forEach(item => {
+            sidebarItems.forEach((item, index) => {
                 item.addEventListener('click', function(e) {
                     e.stopPropagation();
                     // Remove active class from all items
                     sidebarItems.forEach(i => i.classList.remove('active'));
                     // Add active class to clicked item
                     this.classList.add('active');
+                    
+                    // Call the appropriate function based on the item index
+                    switch(index) {
+                        case 0:
+                            loadDashboard();
+                            break;
+                        case 1:
+                            loadPendingDonations();
+                            break;
+                        case 2:
+                            loadApprovedDonations();
+                            break;
+                        case 3:
+                            loadPendingWithdrawals();
+                            break;
+                        case 4:
+                            loadUsers();
+                            break;
+                        case 5:
+                            loadReports();
+                            break;
+                        case 6:
+                            loadSettings();
+                            break;
+                    }
                     
                     // Close sidebar on mobile after selection
                     if (window.innerWidth <= 992) {
@@ -1083,6 +1193,59 @@
             }
         }
 
+        // Function to update the rejected donations badge
+        function updateRejectedBadge(count) {
+            const rejectedBadge = document.getElementById('rejected-badge');
+            if (rejectedBadge) {
+                if (count > 0) {
+                    rejectedBadge.textContent = count;
+                    rejectedBadge.style.display = 'flex';
+                } else {
+                    rejectedBadge.style.display = 'none';
+                }
+            }
+        }
+
+        // Add a creative section to the dashboard showing rejected donations insights
+        function addRejectedDonationsInsights(rejectedDonations) {
+            if (rejectedDonations.length === 0) return '';
+            
+            // Calculate insights
+            const reasons = {};
+            rejectedDonations.forEach(donation => {
+                const reason = donation.rejectionReason || 'Unknown';
+                reasons[reason] = (reasons[reason] || 0) + 1;
+            });
+            
+            // Find most common reason
+            let mostCommonReason = '';
+            let maxCount = 0;
+            for (const [reason, count] of Object.entries(reasons)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    mostCommonReason = reason;
+                }
+            }
+            
+            return '<div class="pending-donations" style="margin-top:20px;background:linear-gradient(135deg,#ff9a9e 0%,#fad0c4 100%);color:white;">' +
+                '<h2 style="color:white;">Rejected Donations Insights</h2>' +
+                '<div style="display:flex;flex-wrap:wrap;gap:15px;margin-top:15px;">' +
+                    '<div style="flex:1;min-width:200px;background:rgba(255,255,255,0.2);padding:15px;border-radius:10px;">' +
+                        '<h3 style="color:white;margin-top:0;">Total Rejected</h3>' +
+                        '<div style="font-size:2rem;font-weight:bold;">' + rejectedDonations.length + '</div>' +
+                    '</div>' +
+                    '<div style="flex:1;min-width:200px;background:rgba(255,255,255,0.2);padding:15px;border-radius:10px;">' +
+                        '<h3 style="color:white;margin-top:0;">Most Common Reason</h3>' +
+                        '<div style="font-size:1rem;font-weight:bold;">' + mostCommonReason + '</div>' +
+                        '<div style="font-size:0.9rem;">(' + maxCount + ' donations)</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div style="margin-top:15px;text-align:center;">' +
+                    '<button class="btn btn-primary" onclick="loadRejectedDonations()" style="background:white;color:#EF4444;border:none;padding:10px 20px;border-radius:5px;font-weight:bold;cursor:pointer;">View All Rejected Donations</button>' +
+                '</div>' +
+            '</div>';
+        }
+        
         function updateDashboardStats(stats) {
             // Update the dashboard cards with new stats
             const totalDonations = stats.pendingDonations + stats.approvedDonations + stats.rejectedDonations;
@@ -1160,51 +1323,37 @@
             const sidebar = document.getElementById('sidebar');
             const headerControls = document.getElementById('header-controls');
             const menuToggle = document.getElementById('menu-toggle');
+            const bottomNav = document.getElementById('bottom-nav');
 
             if (loginContainer) loginContainer.style.display = 'none';
             if (sidebar) {
-                sidebar.style.display = 'block';
-                // On mobile, hide sidebar by default and show menu toggle
-                if (window.innerWidth <= 992) {
+                // Show sidebar on desktop, hide on mobile
+                if (window.innerWidth > 992) {
+                    sidebar.style.display = 'block';
+                    // On desktop, hide sidebar by default and show menu toggle
                     sidebar.classList.remove('active');
+                } else {
+                    sidebar.style.display = 'none';
+                    // Show bottom navigation on mobile
+                    if (bottomNav) bottomNav.style.display = 'flex';
+                    // Set first item as active
+                    const bottomNavItems = document.querySelectorAll('.nav-item');
+                    if (bottomNavItems.length > 0) {
+                        bottomNavItems.forEach((item, index) => {
+                            if (index === 0) {
+                                item.classList.add('active');
+                            } else {
+                                item.classList.remove('active');
+                            }
+                        });
+                    }
                 }
             }
             if (headerControls) headerControls.style.display = 'flex';
 
-            // Show menu toggle on mobile
+            // Show menu toggle on desktop, hide on mobile
             if (menuToggle) {
-                menuToggle.style.display = 'block';
-            }
-        }
-        
-        // Check if already logged in
-        if (authToken) {
-            // Verify admin user exists before showing admin panel
-            verifyAdminUser().then(isValid => {
-                if (isValid) {
-                    showAdminPanel();
-                    loadDashboard();
-                    initializeRealTimeUpdates();
-                } else {
-                    showLoginForm();
-                }
-            }).catch(() => {
-                showLoginForm();
-            });
-        }
-        
-        // Verify admin user exists
-        async function verifyAdminUser() {
-            try {
-                const response = await fetch(normalizedApiBaseUrl + '/admin/verify');
-                if (response.ok) {
-                    const data = await response.json();
-                    return data.status === 'OK';
-                }
-                return false;
-            } catch (error) {
-                console.error('Admin verification error:', error);
-                return false;
+                menuToggle.style.display = window.innerWidth > 992 ? 'block' : 'none';
             }
         }
         
@@ -1214,10 +1363,12 @@
             const headerControls = document.getElementById('header-controls');
             const mainContent = document.getElementById('main-content');
             const menuToggle = document.getElementById('menu-toggle');
+            const bottomNav = document.getElementById('bottom-nav');
 
             if (loginContainer) loginContainer.style.display = 'block';
             if (sidebar) sidebar.style.display = 'none';
             if (headerControls) headerControls.style.display = 'none';
+            if (bottomNav) bottomNav.style.display = 'none';
 
             if (mainContent) {
                 mainContent.innerHTML =
@@ -1241,6 +1392,85 @@
                 menuToggle.style.display = 'none';
             }
         }
+        
+        // Update the mobile menu toggle to work properly
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            const headerControls = document.getElementById('header-controls');
+            const sidebarItems = document.querySelectorAll('.sidebar li');
+            const bottomNavItems = document.querySelectorAll('.nav-item');
+            
+            // Initialize sidebar navigation for desktop
+            sidebarItems.forEach((item, index) => {
+                item.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    // Remove active class from all items
+                    sidebarItems.forEach(i => i.classList.remove('active'));
+                    // Add active class to clicked item
+                    this.classList.add('active');
+                    
+                    // Close sidebar on desktop after selection
+                    if (window.innerWidth > 992) {
+                        sidebar.classList.remove('active');
+                        if (sidebarOverlay) {
+                            sidebarOverlay.classList.remove('active');
+                        }
+                    }
+                });
+            });
+            
+            // Initialize bottom navigation for mobile
+            if (bottomNavItems.length > 0) {
+                bottomNavItems.forEach((item, index) => {
+                    item.addEventListener('click', function(e) {
+                        // Remove active class from all items
+                        bottomNavItems.forEach(i => i.classList.remove('active'));
+                        // Add active class to clicked item
+                        this.classList.add('active');
+                    });
+                });
+            }
+            
+            if (menuToggle && sidebar) {
+                menuToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('active');
+                    if (sidebarOverlay) {
+                        sidebarOverlay.classList.toggle('active');
+                    }
+                });
+            }
+            
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', function() {
+                    sidebar.classList.remove('active');
+                    sidebarOverlay.classList.remove('active');
+                });
+            }
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                const bottomNav = document.getElementById('bottom-nav');
+                if (window.innerWidth <= 992) {
+                    // Mobile view
+                    if (sidebar) sidebar.style.display = 'none';
+                    if (menuToggle) menuToggle.style.display = 'none';
+                    if (bottomNav) bottomNav.style.display = 'flex';
+                } else {
+                    // Desktop view
+                    if (sidebar) sidebar.style.display = 'block';
+                    if (menuToggle) menuToggle.style.display = 'block';
+                    if (bottomNav) bottomNav.style.display = 'none';
+                    // Reset active states
+                    bottomNavItems.forEach(i => i.classList.remove('active'));
+                    // Set first item as active
+                    if (bottomNavItems.length > 0) {
+                        bottomNavItems[0].classList.add('active');
+                    }
+                }
+            });
+        });
         
         // API functions
         async function apiRequest(endpoint, options = {}) {
@@ -1323,6 +1553,9 @@
                     apiRequest('/withdrawals/status/pending').catch(() => [])
                 ]);
 
+                // Update rejected badge
+                updateRejectedBadge(rejectedDonations.length);
+
                 console.log('Dashboard data:', {
                     pendingDonations: pendingDonations.length,
                     approvedDonations: approvedDonations.length,
@@ -1335,6 +1568,9 @@
 
                 const mainContent = document.getElementById('main-content');
                 if (!mainContent) return;
+
+                // Add rejected donations insights section
+                const insightsSection = addRejectedDonationsInsights(rejectedDonations);
 
                 mainContent.innerHTML =
                     '<div class="stats-container">' +
@@ -1355,7 +1591,7 @@
                             '<div class="value" style="font-size:2rem;font-weight:bold;">' + totalCredits + '</div>' +
                         '</div>' +
                     '</div>' +
-
+                    insightsSection +
                     '<div class="pending-donations" style="margin-top:20px;">' +
                         '<h2>Recent Pending Donations' +
                         '<button class="refresh-btn" onclick="loadDashboard()">' +
@@ -1369,7 +1605,6 @@
                                 '<th style="padding:10px;text-align:left;">Title</th>' +
                                 '<th style="padding:10px;text-align:left;">Type</th>' +
                                 '<th style="padding:10px;text-align:center;">Credits</th>' +
-                                '<th style="padding:10px;text-align:center;">Photos</th>' +
                                 '<th style="padding:10px;text-align:center;">Actions</th>' +
                                 '</tr></thead><tbody>' +
 
@@ -1380,19 +1615,6 @@
                                     '<td style="padding:10px;">' + (donation.type || 'Unknown') + '</td>' +
                                     '<td style="padding:10px;text-align:center;">' + (donation.credits || 0) + '</td>' +
                                     '<td style="padding:10px;text-align:center;">' +
-                                        '<div style="display:flex;gap:3px;justify-content:center;">' +
-                                            (donation.donationPhoto ?
-                                                '<img src="/uploads/' + donation.donationPhoto + '" alt="Donation" onclick="showImageModal(\'/uploads/' + donation.donationPhoto + '\', \'Donation Photo\')" style="width:30px;height:30px;object-fit:cover;border-radius:3px;cursor:pointer;border:1px solid #ddd;" />' :
-                                                '<div style="width:30px;height:30px;background:#f0f0f0;border-radius:3px;display:flex;align-items:center;justify-content:center;color:#999;font-size:8px;">No</div>'
-                                            ) +
-                                            (donation.selfiePhoto ?
-                                                '<img src="/uploads/' + donation.selfiePhoto + '" alt="Selfie" onclick="showImageModal(\'/uploads/' + donation.selfiePhoto + '\', \'Selfie Photo\')" style="width:30px;height:30px;object-fit:cover;border-radius:3px;cursor:pointer;border:1px solid #ddd;" />' :
-                                                '<div style="width:30px;height:30px;background:#f0f0f0;border-radius:3px;display:flex;align-items:center;justify-content:center;color:#999;font-size:8px;">No</div>'
-                                            ) +
-                                        '</div>' +
-                                    '</td>' +
-                                    '<td style="padding:10px;text-align:center;">' +
-                                        '<button class="btn-action" onclick="viewDonationDetails(\'' + donation.id + '\')" style="padding:4px 8px;background:#6C63FF;color:white;border:none;border-radius:3px;cursor:pointer;margin-right:3px;">View</button>' +
                                         '<button class="btn-action" onclick="approveDonation(\'' + donation.id + '\')" style="padding:4px 8px;background:#10B981;color:white;border:none;border-radius:3px;cursor:pointer;margin-right:3px;">✓</button>' +
                                         '<button class="btn-action" onclick="rejectDonation(\'' + donation.id + '\')" style="padding:4px 8px;background:#EF4444;color:white;border:none;border-radius:3px;cursor:pointer;">✗</button>' +
                                     '</td>' +
@@ -1426,15 +1648,22 @@
         }
         
         async function loadPendingDonations() {
-            console.log('Loading pending donations...');
+            console.log('Loading pending donations and withdrawals...');
 
             try {
-                const donations = await apiRequest('/donations/status/pending');
+                // Fetch both pending donations and withdrawals
+                const [donations, withdrawals] = await Promise.all([
+                    apiRequest('/donations/status/pending'),
+                    apiRequest('/withdrawals/status/pending')
+                ]);
+                
                 console.log('Pending donations loaded:', donations);
+                console.log('Pending withdrawals loaded:', withdrawals);
 
                 const mainContent = document.getElementById('main-content');
                 if (!mainContent) return;
 
+                // Pending Donations Section
                 let contentHtml = '<div class="pending-donations">' +
                     '<h2>Pending Donations (' + donations.length + ')' +
                     '<button class="refresh-btn" onclick="loadPendingDonations()">' +
@@ -1451,15 +1680,11 @@
                         '<th style="padding:12px;text-align:left;">Type</th>' +
                         '<th style="padding:12px;text-align:center;">Credits</th>' +
                         '<th style="padding:12px;text-align:center;">Date</th>' +
-                        '<th style="padding:12px;text-align:center;">Photos</th>' +
                         '<th style="padding:12px;text-align:center;">Actions</th>' +
                         '</tr></thead><tbody>';
 
                     donations.forEach(donation => {
                         console.log('Processing donation:', donation);
-                        const donationPhotoUrl = donation.donationPhoto ? '/uploads/' + donation.donationPhoto : '';
-                        const selfiePhotoUrl = donation.selfiePhoto ? '/uploads/' + donation.selfiePhoto : '';
-
                         contentHtml += '<tr style="border-bottom:1px solid #eee;">' +
                             '<td style="padding:12px;">' + (donation.user?.name || 'Unknown') + '</td>' +
                             '<td style="padding:12px;">' + (donation.title || 'No Title') + '</td>' +
@@ -1467,19 +1692,6 @@
                             '<td style="padding:12px;text-align:center;">' + (donation.credits || 0) + '</td>' +
                             '<td style="padding:12px;text-align:center;">' + (donation.date || 'No Date') + '</td>' +
                             '<td style="padding:12px;text-align:center;">' +
-                                '<div style="display:flex;gap:5px;justify-content:center;">' +
-                                    (donationPhotoUrl ?
-                                        '<img src="' + donationPhotoUrl + '" alt="Donation" onclick="showImageModal(\'' + donationPhotoUrl + '\', \'Donation Photo\')" style="width:40px;height:40px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid #ddd;" />' :
-                                        '<div style="width:40px;height:40px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#999;font-size:10px;">No Photo</div>'
-                                    ) +
-                                    (selfiePhotoUrl ?
-                                        '<img src="' + selfiePhotoUrl + '" alt="Selfie" onclick="showImageModal(\'' + selfiePhotoUrl + '\', \'Selfie Photo\')" style="width:40px;height:40px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid #ddd;" />' :
-                                        '<div style="width:40px;height:40px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#999;font-size:10px;">No Selfie</div>'
-                                    ) +
-                                '</div>' +
-                            '</td>' +
-                            '<td style="padding:12px;text-align:center;">' +
-                                '<button class="btn-action btn-view" onclick="viewDonationDetails(\'' + donation.id + '\')" style="padding:6px 12px;background:#6C63FF;color:white;border:none;border-radius:4px;cursor:pointer;margin-right:5px;">View Details</button>' +
                                 '<button class="btn-action btn-approve" onclick="approveDonation(\'' + donation.id + '\')" style="padding:6px 12px;background:#10B981;color:white;border:none;border-radius:4px;cursor:pointer;margin-right:5px;">Approve</button>' +
                                 '<button class="btn-action btn-reject" onclick="rejectDonation(\'' + donation.id + '\')" style="padding:6px 12px;background:#EF4444;color:white;border:none;border-radius:4px;cursor:pointer;">Reject</button>' +
                             '</td>' +
@@ -1490,16 +1702,52 @@
                 }
 
                 contentHtml += '</div>';
+                
+                // Pending Withdrawals Section
+                contentHtml += '<div class="pending-donations" style="margin-top:20px;">' +
+                    '<h2>Pending Withdrawals (' + withdrawals.length + ')' +
+                    '<button class="refresh-btn" onclick="loadPendingDonations()">' +
+                    '<i class="fas fa-sync-alt"></i> Refresh</button></h2>';
+
+                if (withdrawals.length === 0) {
+                    contentHtml += '<div class="empty-state"><p>No pending withdrawals</p></div>';
+                } else {
+                    contentHtml += '<div style="overflow-x:auto;">' +
+                        '<table style="width:100%;border-collapse:collapse;background:white;">' +
+                        '<thead><tr style="background:#6C63FF;color:white;">' +
+                        '<th style="padding:12px;text-align:left;">User</th>' +
+                        '<th style="padding:12px;text-align:left;">Amount</th>' +
+                        '<th style="padding:12px;text-align:center;">Date</th>' +
+                        '<th style="padding:12px;text-align:center;">Actions</th>' +
+                        '</tr></thead><tbody>';
+
+                    withdrawals.forEach(withdrawal => {
+                        console.log('Processing withdrawal:', withdrawal);
+                        contentHtml += '<tr style="border-bottom:1px solid #eee;">' +
+                            '<td style="padding:12px;">' + (withdrawal.user?.name || 'Unknown') + '</td>' +
+                            '<td style="padding:12px;">' + (withdrawal.amount || 0) + ' credits</td>' +
+                            '<td style="padding:12px;text-align:center;">' + (withdrawal.date || 'No Date') + '</td>' +
+                            '<td style="padding:12px;text-align:center;">' +
+                                '<button class="btn-action btn-approve" onclick="processWithdrawal(\'' + withdrawal.id + '\')" style="padding:6px 12px;background:#10B981;color:white;border:none;border-radius:4px;cursor:pointer;margin-right:5px;">Process</button>' +
+                                '<button class="btn-action btn-reject" onclick="rejectWithdrawal(\'' + withdrawal.id + '\')" style="padding:6px 12px;background:#EF4444;color:white;border:none;border-radius:4px;cursor:pointer;">Reject</button>' +
+                            '</td>' +
+                            '</tr>';
+                    });
+
+                    contentHtml += '</tbody></table></div>';
+                }
+
+                contentHtml += '</div>';
                 mainContent.innerHTML = contentHtml;
-                console.log('✅ Pending donations displayed successfully');
+                console.log('✅ Pending donations and withdrawals displayed successfully');
 
             } catch (error) {
-                console.error('❌ Error loading pending donations:', error);
+                console.error('❌ Error loading pending donations and withdrawals:', error);
                 const mainContent = document.getElementById('main-content');
                 if (mainContent) {
                     mainContent.innerHTML =
                         '<div class="empty-state" style="color:red;padding:20px;">' +
-                        '<h3>Error loading donations:</h3>' +
+                        '<h3>Error loading pending items:</h3>' +
                         '<p>' + error.message + '</p>' +
                         '<button onclick="loadPendingDonations()">Retry</button>' +
                         '</div>';
@@ -1512,12 +1760,19 @@
             
             try {
                 const donations = await apiRequest('/donations/status/approved');
+                // Update rejected badge
+                const rejectedDonations = await apiRequest('/donations/status/rejected').catch(() => []);
+                updateRejectedBadge(rejectedDonations.length);
+                
                 document.getElementById('main-content').innerHTML = 
                     '<div class="pending-donations">' +
                         '<h2>' +
                             'Approved Donations' +
                             '<button class="refresh-btn" onclick="loadApprovedDonations()">' +
                                 '<i class="fas fa-sync-alt"></i> Refresh' +
+                            '</button>' +
+                            '<button class="btn btn-primary" onclick="loadRejectedDonations()" style="margin-left:10px;background:#EF4444;color:white;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;">' +
+                                '<i class="fas fa-times-circle"></i> View Rejected (' + rejectedDonations.length + ')' +
                             '</button>' +
                         '</h2>' +
                         '<div id="approved-donations-list">' +
@@ -1540,10 +1795,13 @@
             
             try {
                 const donations = await apiRequest('/donations/status/rejected');
+                // Update rejected badge
+                updateRejectedBadge(donations.length);
+                
                 document.getElementById('main-content').innerHTML = 
                     '<div class="pending-donations">' +
                         '<h2>' +
-                            'Rejected Donations' +
+                            'Rejected Donations (' + donations.length + ')' +
                             '<button class="refresh-btn" onclick="loadRejectedDonations()">' +
                                 '<i class="fas fa-sync-alt"></i> Refresh' +
                             '</button>' +
@@ -1552,6 +1810,16 @@
                             (donations.length > 0 ? renderDonationList(donations) : 
                                 '<div class="empty-state">' +
                                     '<p>No rejected donations</p>' +
+                                    '<div style="margin-top:20px;padding:20px;background:#f8f9fa;border-radius:10px;">' +
+                                        '<h3 style="color:#6C63FF;margin-bottom:10px;">💡 Why Donations Get Rejected</h3>' +
+                                        '<ul style="text-align:left;">' +
+                                            '<li>Photo doesn\'t show a valid donation</li>' +
+                                            '<li>Location data is missing or suspicious</li>' +
+                                            '<li>Timestamp indicates possible fraud</li>' +
+                                            '<li>Watermark verification failed</li>' +
+                                            '<li>Duplicate submission detected</li>' +
+                                        '</ul>' +
+                                    '</div>' +
                                 '</div>') +
                         '</div>' +
                     '</div>';
@@ -1607,6 +1875,10 @@
                 // Try to fetch users with authentication
                 const users = await apiRequest('/users');
                 console.log('Authenticated API success! Users:', users);
+                
+                // Update rejected badge
+                const rejectedDonations = await apiRequest('/donations/status/rejected').catch(() => []);
+                updateRejectedBadge(rejectedDonations.length);
 
                 // Build the users table
                 let contentHtml = '<div class="pending-donations">' +
@@ -2024,188 +2296,6 @@
             }
         }
         
-        // Image Modal Functions
-        function showImageModal(imageUrl, title) {
-            // Create image modal HTML
-            const modalHTML =
-                '<div class="image-modal-overlay" id="image-modal" onclick="closeImageModal()">' +
-                    '<div class="image-modal-content" onclick="event.stopPropagation()">' +
-                        '<button class="image-modal-close" onclick="closeImageModal()">&times;</button>' +
-                        '<div class="image-modal-title">' + title + '</div>' +
-                        '<img src="' + imageUrl + '" alt="' + title + '" />' +
-                    '</div>' +
-                '</div>';
-
-            // Add modal to page
-            document.body.insertAdjacentHTML('beforeend', modalHTML);
-            document.body.style.overflow = 'hidden'; // Prevent background scrolling
-        }
-
-        function closeImageModal() {
-            const modal = document.getElementById('image-modal');
-            if (modal) {
-                modal.remove();
-                document.body.style.overflow = 'auto'; // Re-enable scrolling
-            }
-        }
-
-        // Enhanced Donation Details Function
-        async function viewDonationDetails(donationId) {
-            try {
-                console.log('Loading donation details for ID:', donationId);
-                const donation = await apiRequest('/donations/' + donationId);
-
-                console.log('Donation details loaded:', donation);
-
-                // Format date and time
-                const createdDate = donation.createdAt ? new Date(donation.createdAt).toLocaleDateString() : 'N/A';
-                const createdTime = donation.createdAt ? new Date(donation.createdAt).toLocaleTimeString() : 'N/A';
-
-                // Create detailed modal HTML
-                const modalHTML =
-                    '<div class="modal-overlay" id="donation-modal">' +
-                        '<div class="modal-content" style="max-width: 800px; width: 90%;">' +
-                            '<div class="modal-header">' +
-                                '<h2><i class="fas fa-donation"></i> Donation Details</h2>' +
-                                '<button class="modal-close" onclick="closeDonationModal()">&times;</button>' +
-                            '</div>' +
-                            '<div class="modal-body">' +
-                                '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">' +
-                                    // Left Column - Photos
-                                    '<div>' +
-                                        '<h3 style="margin-bottom: 1rem; color: #6C63FF;"><i class="fas fa-images"></i> Photos</h3>' +
-                                        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">' +
-                                            '<div>' +
-                                                '<label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #6C63FF;">Donation Photo:</label>' +
-                                                (donation.donationPhoto ?
-                                                    '<img src="/uploads/' + donation.donationPhoto + '" alt="Donation Photo" onclick="showImageModal(\'/uploads/' + donation.donationPhoto + '\', \'Donation Photo\')" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid #ddd;" />' :
-                                                    '<div style="width: 100%; height: 150px; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999; border: 2px dashed #ddd;">No Photo</div>'
-                                                ) +
-                                            '</div>' +
-                                            '<div>' +
-                                                '<label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #6C63FF;">Selfie Photo:</label>' +
-                                                (donation.selfiePhoto ?
-                                                    '<img src="/uploads/' + donation.selfiePhoto + '" alt="Selfie Photo" onclick="showImageModal(\'/uploads/' + donation.selfiePhoto + '\', \'Selfie Photo\')" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid #ddd;" />' :
-                                                    '<div style="width: 100%; height: 150px; background: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #999; border: 2px dashed #ddd;">No Selfie</div>'
-                                                ) +
-                                            '</div>' +
-                                        '</div>' +
-                                    '</div>' +
-                                    // Right Column - Basic Info
-                                    '<div>' +
-                                        '<h3 style="margin-bottom: 1rem; color: #6C63FF;"><i class="fas fa-info-circle"></i> Basic Information</h3>' +
-                                        '<div class="user-detail-row">' +
-                                            '<label>Donation ID:</label>' +
-                                            '<span style="font-family: monospace; background: #f5f5f5; padding: 0.2rem 0.5rem; border-radius: 3px;">' + donation.id + '</span>' +
-                                        '</div>' +
-                                        '<div class="user-detail-row">' +
-                                            '<label>Title:</label>' +
-                                            '<span>' + (donation.title || 'N/A') + '</span>' +
-                                        '</div>' +
-                                        '<div class="user-detail-row">' +
-                                            '<label>Type:</label>' +
-                                            '<span>' + (donation.type || 'N/A') + '</span>' +
-                                        '</div>' +
-                                        '<div class="user-detail-row">' +
-                                            '<label>Credits:</label>' +
-                                            '<span style="font-weight: bold; color: #10B981;">' + (donation.credits || 0) + '</span>' +
-                                        '</div>' +
-                                        '<div class="user-detail-row">' +
-                                            '<label>Status:</label>' +
-                                            '<span class="status-badge status-' + donation.status + '">' + donation.status + '</span>' +
-                                        '</div>' +
-                                    '</div>' +
-                                '</div>' +
-                                // Full Width Details
-                                '<div style="margin-bottom: 1.5rem;">' +
-                                    '<h3 style="margin-bottom: 1rem; color: #6C63FF;"><i class="fas fa-align-left"></i> Description</h3>' +
-                                    '<div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; border-left: 4px solid #6C63FF;">' +
-                                        '<p style="margin: 0; line-height: 1.5;">' + (donation.description || 'No description provided') + '</p>' +
-                                    '</div>' +
-                                '</div>' +
-                                '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">' +
-                                    '<div>' +
-                                        '<h4 style="margin-bottom: 0.5rem; color: #6C63FF;"><i class="fas fa-user"></i> User Information</h4>' +
-                                        '<div class="user-detail-row">' +
-                                            '<label>Name:</label>' +
-                                            '<span>' + (donation.user?.name || 'N/A') + '</span>' +
-                                        '</div>' +
-                                        '<div class="user-detail-row">' +
-                                            '<label>Email:</label>' +
-                                            '<span>' + (donation.user?.email || 'N/A') + '</span>' +
-                                        '</div>' +
-                                        '<div class="user-detail-row">' +
-                                            '<label>Phone:</label>' +
-                                            '<span>' + (donation.user?.phone || 'N/A') + '</span>' +
-                                        '</div>' +
-                                    '</div>' +
-                                    '<div>' +
-                                        '<h4 style="margin-bottom: 0.5rem; color: #6C63FF;"><i class="fas fa-map-marker-alt"></i> Location & Time</h4>' +
-                                        '<div class="user-detail-row">' +
-                                            '<label>Location:</label>' +
-                                            '<span>' + (donation.location || 'N/A') + '</span>' +
-                                        '</div>' +
-                                        '<div class="user-detail-row">' +
-                                            '<label>Date:</label>' +
-                                            '<span>' + (donation.date || 'N/A') + '</span>' +
-                                        '</div>' +
-                                        '<div class="user-detail-row">' +
-                                            '<label>Time:</label>' +
-                                            '<span>' + (donation.time || 'N/A') + '</span>' +
-                                        '</div>' +
-                                    '</div>' +
-                                    '<div>' +
-                                        '<h4 style="margin-bottom: 0.5rem; color: #6C63FF;"><i class="fas fa-calendar"></i> Timestamps</h4>' +
-                                        '<div class="user-detail-row">' +
-                                            '<label>Created:</label>' +
-                                            '<span>' + createdDate + ' ' + createdTime + '</span>' +
-                                        '</div>' +
-                                        '<div class="user-detail-row">' +
-                                            '<label>Updated:</label>' +
-                                            '<span>' + (donation.updatedAt ? new Date(donation.updatedAt).toLocaleString() : 'N/A') + '</span>' +
-                                        '</div>' +
-                                    '</div>' +
-                                '</div>' +
-                                // Additional Details
-                                (donation.receiver ?
-                                    '<div class="user-detail-row">' +
-                                        '<label>Receiver:</label>' +
-                                        '<span>' + donation.receiver + '</span>' +
-                                    '</div>' : ''
-                                ) +
-                                (donation.quantity ?
-                                    '<div class="user-detail-row">' +
-                                        '<label>Quantity:</label>' +
-                                        '<span>' + donation.quantity + '</span>' +
-                                    '</div>' : ''
-                                ) +
-                            '</div>' +
-                            '<div class="modal-actions">' +
-                                '<button class="btn btn-reject" onclick="closeDonationModal()">' +
-                                    '<i class="fas fa-times"></i> Close' +
-                                '</button>' +
-                            '</div>' +
-                        '</div>' +
-                    '</div>';
-
-                // Add modal to page
-                document.body.insertAdjacentHTML('beforeend', modalHTML);
-                document.body.style.overflow = 'hidden'; // Prevent background scrolling
-
-            } catch (error) {
-                console.error('Error loading donation details:', error);
-                showToast('❌ Error loading donation details: ' + error.message, 'error');
-            }
-        }
-
-        function closeDonationModal() {
-            const modal = document.getElementById('donation-modal');
-            if (modal) {
-                modal.remove();
-                document.body.style.overflow = 'auto'; // Re-enable scrolling
-            }
-        }
-
         function viewDonationDetails(donationId) {
             // Redirect to donation details page with proper URL construction
             const baseUrl = window.location.origin;
@@ -2459,16 +2549,6 @@
                 document.body.style.overflow = 'auto'; // Re-enable scrolling
             }
         }
-
-        // Keyboard event listeners for modals
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                closeImageModal();
-                closeDonationModal();
-                closeModal();
-                closeApiTestModal();
-            }
-        });
 
         // Make testAllAPIs available globally for console testing
         window.testAllAPIs = testAllAPIs;
