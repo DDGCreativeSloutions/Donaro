@@ -468,7 +468,7 @@
             }
 
             .menu-toggle {
-                display: block;
+                display: none; /* Hide menu toggle on mobile since we have bottom nav */
             }
 
             .sidebar-overlay.active {
@@ -711,6 +711,13 @@
             const headerControls = document.getElementById('header-controls');
             const sidebarItems = document.querySelectorAll('.sidebar li');
 
+            // Hide menu toggle on mobile since we're using bottom navigation
+            if (menuToggle) {
+                if (window.innerWidth <= 992) {
+                    menuToggle.style.display = 'none';
+                }
+            }
+
             // Initialize sidebar navigation
             sidebarItems.forEach(item => {
                 item.addEventListener('click', function(e) {
@@ -745,6 +752,17 @@
                     sidebarOverlay.classList.remove('active');
                 });
             }
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (menuToggle) {
+                    if (window.innerWidth <= 992) {
+                        menuToggle.style.display = 'none';
+                    } else {
+                        menuToggle.style.display = 'block';
+                    }
+                }
+            });
         });
 
         // API Configuration - Use environment-aware URL
@@ -829,17 +847,18 @@
             
             const user = donation.user || {};
             
-            // Ensure image URLs are absolute
+            // Ensure image URLs are absolute and properly constructed for Railway deployment
+            const baseUrl = window.location.origin;
             const donationPhotoUrl = donation.donationPhoto 
                 ? (donation.donationPhoto.startsWith('http') 
                     ? donation.donationPhoto 
-                    : normalizedApiBaseUrl.replace('/api', '') + donation.donationPhoto)
+                    : baseUrl + donation.donationPhoto)
                 : null;
                 
             const selfiePhotoUrl = donation.selfiePhoto 
                 ? (donation.selfiePhoto.startsWith('http') 
                     ? donation.selfiePhoto 
-                    : normalizedApiBaseUrl.replace('/api', '') + donation.selfiePhoto)
+                    : baseUrl + donation.selfiePhoto)
                 : null;
             
             document.getElementById('donation-content').innerHTML = 
