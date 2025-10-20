@@ -839,9 +839,9 @@
         
         // Initialize real-time updates (Socket.IO for local, SSE/Polling for Vercel)
         function initializeRealTimeUpdates() {
-            // For Vercel deployment, we use SSE and polling
-            if (normalizedApiBaseUrl.includes('vercel.app')) {
-                console.log('Using SSE and polling for real-time updates on Vercel');
+            // For Railway deployment, we use SSE and polling
+            if (normalizedApiBaseUrl.includes('.railway.app')) {
+                console.log('Using SSE and polling for real-time updates on Railway');
 
                 // Initialize SSE connection
                 initializeSSE();

@@ -1,56 +1,45 @@
-# Donaro Admin Panel Access
+# Admin Credentials Setup
 
-This document contains the credentials and instructions for accessing the Donaro admin panel.
+This guide explains how to set up admin credentials for the Donaro app.
 
-## Admin Credentials
+## Security Best Practices
 
-**Email**: `admin@donaro.com`
-**Password**: `Admin@123`
+### Password Requirements
+- Use a strong, unique password with at least 12 characters
+- Include uppercase and lowercase letters, numbers, and special characters
+- Never reuse passwords from other accounts
+- Change passwords regularly
 
-## Access Instructions
+### Account Security
+- Use a dedicated email address for admin access
+- Monitor login activity regularly
+- Restrict admin access to trusted individuals only
 
-1. Start the backend server:
-   ```bash
-   cd backend
-   npm start
-   ```
+### Environment Variables
+Store admin credentials securely in environment variables:
 
-2. Open your browser and navigate to:
-   ```
-   http://localhost:3000/admin
-   ```
+```env
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD=your-super-secure-password
+ADMIN_NAME=Admin User
+ADMIN_PHONE=0000000000
+```
 
-3. Use the credentials above to log in to the admin panel.
+### Setup Process
+1. Configure the environment variables in your deployment platform
+2. Restart the application to apply changes
+3. Access the admin panel at `/admin`
+4. Log in with your admin credentials
 
-## Admin Panel Features
+### Troubleshooting
+If you're unable to access the admin panel:
+1. Verify that ADMIN_EMAIL and ADMIN_PASSWORD are correctly set
+2. Check that the admin user was created during the first application startup
+3. Ensure the database is properly configured and accessible
+4. Review application logs for authentication errors
 
-Once logged in, you'll have access to:
-
-- **Dashboard**: Overview of system statistics
-- **Donation Management**: Review and approve/reject pending donations
-- **Withdrawal Processing**: Handle user withdrawal requests
-- **User Management**: View and manage all registered users
-- **Reports**: Access system analytics and reports
-- **Settings**: Configure system parameters
-
-## Security Notes
-
-- These credentials are for development purposes only
-- In a production environment, you should:
-  - Change the default password immediately
-  - Use a strong, unique password
-  - Enable two-factor authentication if available
-  - Restrict access to authorized personnel only
-
-## Troubleshooting
-
-If you're unable to log in:
-
-1. Ensure the backend server is running
-2. Verify the database contains the admin user
-3. Check that the email and password match exactly
-4. If issues persist, you can recreate the admin user using the `configure-admin.js` script in the backend directory
-
-## Support
-
-For additional help with admin access, contact the development team.
+### Password Recovery
+There is no automated password recovery for admin accounts. If you lose access:
+1. Access the database directly
+2. Update the admin user's password hash manually
+3. Or reset the admin credentials in environment variables and restart the app

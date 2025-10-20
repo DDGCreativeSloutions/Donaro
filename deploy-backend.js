@@ -1,21 +1,21 @@
 #!/usr/bin/env node
 
-// Simple deployment helper script for Vercel
+// Simple deployment helper script for Railway
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('Preparing Donaro backend for Vercel deployment...\n');
+console.log('Preparing Donaro backend for Railway deployment...\n');
 
 try {
-  // Check if vercel.json exists in backend directory
-  if (!fs.existsSync('backend/vercel.json')) {
-    console.error('Error: backend/vercel.json configuration file not found');
-    console.log('Please ensure you have created the vercel.json file first');
+  // Check if railway.toml exists in backend directory
+  if (!fs.existsSync('backend/railway.toml')) {
+    console.error('Error: backend/railway.toml configuration file not found');
+    console.log('Please ensure you have created the railway.toml file first');
     process.exit(1);
   }
 
-  console.log('✓ Found vercel.json configuration');
+  console.log('✓ Found railway.toml configuration');
 
   // Check if server.js exists
   if (!fs.existsSync('backend/src/server.js')) {
@@ -24,14 +24,6 @@ try {
   }
 
   console.log('✓ Found server.js file');
-
-  // Check if API handler exists
-  if (!fs.existsSync('backend/api/index.js')) {
-    console.error('Error: backend/api/index.js not found');
-    process.exit(1);
-  }
-
-  console.log('✓ Found API handler file');
 
   // Check if prisma schema exists
   if (!fs.existsSync('backend/prisma/schema.prisma')) {
@@ -43,10 +35,11 @@ try {
 
   console.log('\nDeployment preparation completed successfully!');
   console.log('\nNext steps:');
-  console.log('1. Ensure you have the Vercel CLI installed: npm install -g vercel');
-  console.log('2. Deploy to Vercel from backend directory: cd backend && vercel');
-  console.log('3. After deployment, run production migrations: npm run migrate:prod');
-  console.log('\nFor detailed instructions, see VERCEL_DEPLOYMENT_GUIDE.md in the project root.');
+  console.log('1. Ensure you have the Railway CLI installed: npm install -g @railway/cli');
+  console.log('2. Login to Railway: railway login');
+  console.log('3. Deploy to Railway from backend directory: cd backend && railway up');
+  console.log('4. After deployment, run production migrations: railway run npm run migrate:prod');
+  console.log('\nFor detailed instructions, see RAILWAY_DEPLOYMENT.md in the project root.');
 
 } catch (error) {
   console.error('Error during deployment preparation:', error.message);

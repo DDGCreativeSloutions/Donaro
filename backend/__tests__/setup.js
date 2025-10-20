@@ -8,7 +8,6 @@ beforeAll(async () => {
   // Clean up test database
   await prisma.$executeRaw`DELETE FROM Withdrawal`;
   await prisma.$executeRaw`DELETE FROM Donation`;
-  await prisma.$executeRaw`DELETE FROM OTP`;
   await prisma.$executeRaw`DELETE FROM User`;
 });
 
@@ -16,7 +15,6 @@ afterAll(async () => {
   // Clean up after tests
   await prisma.$executeRaw`DELETE FROM Withdrawal`;
   await prisma.$executeRaw`DELETE FROM Donation`;
-  await prisma.$executeRaw`DELETE FROM OTP`;
   await prisma.$executeRaw`DELETE FROM User`;
   await prisma.$disconnect();
 });

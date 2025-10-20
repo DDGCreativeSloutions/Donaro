@@ -7,15 +7,15 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 // EmailJS removed - backend now handles all email sending
 
@@ -45,11 +45,6 @@ const isValidUrl = (url: string): boolean => {
 
     // Allow IP addresses for development
     if (hostname.match(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/)) {
-      return true;
-    }
-
-    // Allow Vercel deployments
-    if (hostname.endsWith('.vercel.app') || hostname === 'donaro-backend.vercel.app') {
       return true;
     }
 
@@ -137,32 +132,29 @@ const SignupScreen = () => {
     
     setIsLoading(true);
     try {
-      // Generate OTP from backend
-      const response = await fetch(`${API_BASE_URL}/otp/generate`, {
+      // Directly register the user
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ 
+          name: fullName,
+          email,
+          phone,
+          password
+        }),
       });
 
       const result = await response.json();
 
-      if (result.success) {
-        console.log('✅ OTP generated and email sent successfully from backend');
-
-        // Navigate to OTP verification screen after successful OTP generation
-        router.push({
-          pathname: '/otp-verification',
-          params: {
-            fullName,
-            email,
-            phone,
-            password,
-          }
-        });
+      if (response.ok && result.token) {
+        console.log('✅ Account created successfully');
+        // Login the user directly
+        login(result);
+        router.replace('/(tabs)');
       } else {
-        Alert.alert('Error', result.error || 'Failed to generate OTP. Please try again.');
+        Alert.alert('Error', result.error || 'Failed to create account. Please try again.');
       }
     } catch (error: any) {
       console.error('Signup error:', error);

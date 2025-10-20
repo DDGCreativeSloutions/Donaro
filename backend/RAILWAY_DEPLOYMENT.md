@@ -1,174 +1,97 @@
-# 🚂 Railway Deployment Guide for Donaro Backend
+# Railway Deployment Guide
 
-This guide explains how to deploy the Donaro backend to Railway.
+This guide explains how to deploy the Donaro app to Railway, a cloud platform that simplifies deployment and scaling.
 
-## 📋 Prerequisites
+## Prerequisites
 
-1. **Railway Account**: Sign up at [railway.app](https://railway.app)
-2. **Git Repository**: Push your code to GitHub/GitLab
-3. **PostgreSQL Database**: Railway will provide this automatically
+Before deploying to Railway, ensure you have:
 
-## 🚀 Deployment Steps
+1. A Railway account (free tier available)
+2. The Railway CLI installed (`npm install -g @railway/cli`)
+3. Your app code ready for deployment
 
-### 1. Connect Repository to Railway
+## Environment Variables
 
-1. Go to [Railway Dashboard](https://railway.app/dashboard)
-2. Click "New Project"
-3. Choose "Deploy from GitHub repo"
-4. Select your Donaro backend repository
-5. Railway will automatically detect it's a Node.js project
+Railway automatically manages environment variables through the dashboard. You'll need to configure these variables in your Railway project settings:
 
-### 2. Configure Environment Variables
+| Variable | Description | Example Value |
+|----------|-------------|---------------|
+| DATABASE_URL | PostgreSQL database connection string | postgresql://user:pass@host:port/db |
+| JWT_SECRET | Secret key for JWT token generation | your-super-secret-jwt-key |
+| EMAIL_SERVICE | Email service provider | gmail |
+| EMAIL_USER | Email address for sending notifications | your-email@gmail.com |
+| EMAIL_PASS | App password for email service | your-app-password |
+| FROM_EMAIL | Sender email address | your-email@gmail.com |
+| ADMIN_EMAIL | Admin user email | admin@yourdomain.com |
+| ADMIN_PASSWORD | Admin user password | your-admin-password |
+| ADMIN_NAME | Admin user name | Admin User |
+| ADMIN_PHONE | Admin user phone | 0000000000 |
 
-In your Railway project dashboard, go to **Variables** and add:
+Your app uses email services for sending notifications. The email credentials are already configured in your environment variables.
 
-#### Required Variables:
+## Deployment Steps
+
+1. **Initialize Railway Project**
+   ```bash
+   railway login
+   railway init
+   ```
+
+2. **Configure Environment Variables**
+   Go to your Railway project dashboard and set all the required environment variables listed above.
+
+3. **Deploy Backend**
+   ```bash
+   railway up
+   ```
+
+4. **Run Database Migrations**
+   After the first deployment, you'll need to run database migrations:
+   ```bash
+   railway run npm run migrate:prod
+   ```
+
+5. **Create Admin User**
+   Run the admin user creation script:
+   ```bash
+   railway run node configure-admin.js
+   ```
+
+## Database Setup
+
+The app uses PostgreSQL as its database. Railway provides a free PostgreSQL database addon that you can provision directly from the dashboard.
+
+## Monitoring and Logs
+
+Railway provides built-in logging and monitoring. You can view application logs directly from the Railway dashboard or using the CLI:
+
 ```bash
-NODE_ENV=production
-JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
-EMAILJS_SERVICE_ID=service_0zt6x89
-EMAILJS_TEMPLATE_ID=template_oe1jicm
-EMAILJS_PUBLIC_KEY=bpWDQy63wlpfsWHk7
-EMAIL_USER=ayhdiv377@gmail.com
+railway logs
 ```
 
-#### Database Configuration:
-**Option A: Prisma Accelerate (Recommended)**
-```bash
-DATABASE_URL=prisma+postgres://accelerate.prisma-data.net/?api_key=your-prisma-api-key
-```
+## Scaling
 
-**Option B: Direct PostgreSQL (Railway)**
-```bash
-DATABASE_URL=postgresql://... (provided by Railway PostgreSQL)
-DIRECT_URL=postgresql://... (same as DATABASE_URL for direct connections)
-```
+Railway automatically scales your application based on demand. You can also manually configure scaling options in the Railway dashboard.
 
-#### Optional Variables:
-```bash
-EMAILJS_SERVICE_ID=your-emailjs-service-id
-EMAILJS_TEMPLATE_ID=your-emailjs-template-id
-EMAILJS_PUBLIC_KEY=your-emailjs-public-key
-CORS_ORIGIN=https://your-production-domain.com
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-```
+## Troubleshooting
 
-### 3. EmailJS Configuration
+### Common Issues
 
-Your app uses EmailJS for sending emails (OTP, notifications, etc.). The EmailJS credentials are already configured in your environment variables.
+1. **Database Connection Errors**
+   - Verify DATABASE_URL is correctly configured
+   - Check that the PostgreSQL addon is properly provisioned
 
-**EmailJS Configuration:**
-- **Service ID**: `service_0zt6x89`
-- **Template ID**: `template_oe1jicm`
-- **Public Key**: `bpWDQy63wlpfsWHk7`
-- **Verified Sender**: `ayhdiv377@gmail.com`
+2. **Email Delivery Issues**
+   - Verify EMAIL_SERVICE, EMAIL_USER, and EMAIL_PASS are correct
+   - Check that you're using an app password for Gmail
 
-### 4. Database Setup
-
-Railway will automatically work with your Prisma Accelerate database. No additional database provisioning needed.
-
-### 4. Deploy
-
-1. Push your code to trigger automatic deployment
-2. Railway will:
-   - Install dependencies
-   - Generate Prisma client
-   - Run database migrations
-   - Start the server
-
-## 🔧 Configuration Files
-
-### `railway.toml`
-```toml
-[build]
-builder = "nixpacks"
-
-[deploy]
-startCommand = "npm run build && npm start"
-healthcheckPath = "/api/health"
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3
-```
-
-### `backend/.env.production`
-Contains production environment variables template.
-
-## 🏥 Health Check
-
-Your deployed app will have a health check endpoint:
-```
-https://your-app.railway.app/api/health
-```
-
-## 📊 Monitoring
-
-Railway provides built-in monitoring:
-- **Logs**: View real-time application logs
-- **Metrics**: CPU, memory, and network usage
-- **Deployments**: Track deployment history
-
-## 🔒 Security Checklist
-
-- [ ] Change `JWT_SECRET` to a secure random string (minimum 32 characters)
-- [ ] Verify EmailJS credentials are correct and service is active
-- [ ] Configure CORS origins for your domain
-- [ ] Set up database backups in Railway
-- [ ] Enable Railway's built-in security features
-- [ ] Verify your Gmail account is verified as sender in EmailJS
-
-## 🚨 Troubleshooting
-
-### Common Issues:
-
-1. **Database Connection Failed**
-   - Check if `DATABASE_URL` is set in Railway variables
-   - Ensure PostgreSQL database is provisioned
-
-2. **Build Failed**
-   - Check build logs in Railway dashboard
-   - Ensure all dependencies are in `package.json`
-
-3. **Migration Failed**
-   - Check if Prisma schema is valid
-   - Ensure database is accessible
-
-4. **CORS Errors**
-   - Update `CORS_ORIGIN` in environment variables
-   - Check if your domain is allowed in server configuration
+3. **Admin Access Problems**
+   - Ensure ADMIN_EMAIL and ADMIN_PASSWORD are set
+   - Run the configure-admin.js script if the admin user wasn't created
 
 ### Getting Help
 
-- Check Railway [documentation](https://docs.railway.app)
-- View logs in Railway dashboard
-- Check the health endpoint: `/api/health`
-
-## 📝 Post-Deployment Steps
-
-1. **Test the API**: Verify all endpoints work correctly
-2. **Update Frontend**: Point your frontend to the new production API URL
-3. **Set Up Domain**: Add custom domain in Railway if needed
-4. **Monitor Performance**: Set up alerts for downtime or errors
-5. **Backup Strategy**: Configure automated backups
-
-## 🔄 Updates
-
-To deploy updates:
-
-1. Push changes to your Git repository
-2. Railway will automatically redeploy
-3. Monitor the deployment in Railway dashboard
-4. Check health endpoint after deployment
-
-## 💰 Cost Optimization
-
-Railway offers a generous free tier. To optimize costs:
-
-- Use the free PostgreSQL database
-- Monitor resource usage in dashboard
-- Set up auto-sleep for development environments
-- Use Railway's built-in optimizations
-
----
-
-🎉 **Congratulations!** Your Donaro backend is now deployed on Railway! 🚂
+If you encounter issues not covered in this guide:
+1. Check the Railway documentation
+2. Review application logs
+3. Contact Railway support for platform-specific issues

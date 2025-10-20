@@ -21,11 +21,6 @@ const isValidUrl = (url: string): boolean => {
       return true;
     }
 
-    // Allow Vercel deployments
-    // if (hostname.endsWith('.vercel.app') || hostname === 'donaro-backend.vercel.app') {
-    //   return true;
-    // }
-
     // Allow Railway deployments
     if (hostname.endsWith('.railway.app') || hostname.includes('.up.railway.app')) {
       return true;
@@ -35,11 +30,6 @@ const isValidUrl = (url: string): boolean => {
     // if (hostname.endsWith('yourdomain.com')) {
     //   return true;
     // }
-
-    // Allow custom domains (add your actual domain here)
-    if (hostname === 'yourdomain.com') {
-      return true;
-    }
 
     // Allow common development domains
     if (hostname.includes('.expo.') || hostname.includes('expo.dev')) {
@@ -127,16 +117,16 @@ class ApiService {
 
   public setToken(token: string) {
     this.token = token;
-    // Initialize socket connection when token is set (only if not Vercel deployment)
+    // Initialize socket connection when token is set
     if (token && !this.socket) {
-      // Check if we're running against a Vercel deployment
+      // Check if we're running against a Railway deployment
       const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001/api';
-      const isVercelDeployment = API_URL.includes('.vercel.app') || API_URL.includes('donaro-backend.vercel.app');
+      const isRailwayDeployment = API_URL.includes('.railway.app') || API_URL.includes('.up.railway.app');
 
-      if (!isVercelDeployment) {
+      if (!isRailwayDeployment) {
         this.initializeSocket();
       } else {
-        console.log('Vercel deployment detected - Socket.IO disabled');
+        console.log('Railway deployment detected - Socket.IO disabled');
       }
     }
   }
@@ -144,7 +134,7 @@ class ApiService {
   private initializeSocket() {
     if (!this.token) return;
 
-    // Check if we're running against a Vercel deployment (Socket.IO not supported)
+    // Check if we're running against a Railway deployment (Socket.IO not supported)
     const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3001/api';
 
     try {
@@ -221,7 +211,7 @@ class ApiService {
     }
   }
 
-  // Polling-based real-time updates for Vercel
+  // Polling-based real-time updates for Railway
   private pollingIntervals: Map<string, number> = new Map();
   private lastFetchTimes: Map<string, number> = new Map();
 
@@ -236,7 +226,7 @@ class ApiService {
       return;
     }
 
-    console.log('Starting polling-based real-time updates for Vercel deployment');
+    console.log('Starting polling-based real-time updates for Railway deployment');
 
     // Stop any existing polling
     this.stopPollingUpdates();
@@ -302,7 +292,7 @@ class ApiService {
       return;
     }
 
-    console.log('Starting admin polling for Vercel deployment');
+    console.log('Starting admin polling for Railway deployment');
 
     // Stop any existing admin polling
     const existingInterval = this.pollingIntervals.get('admin');
