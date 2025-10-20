@@ -137,32 +137,46 @@ const SignupScreen = () => {
     
     setIsLoading(true);
     try {
-      // Generate OTP from backend
-      const response = await fetch(`${API_BASE_URL}/otp/generate`, {
+      // Register user directly with backend
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          name: fullName,
+          email,
+          phone,
+          password,
+        }),
       });
 
       const result = await response.json();
 
-      if (result.success) {
-        console.log('✅ OTP generated and email sent successfully from backend');
+      if (response.ok && result.token) {
+        console.log('✅ User registered successfully');
 
-        // Navigate to OTP verification screen after successful OTP generation
-        router.push({
-          pathname: '/otp-verification',
-          params: {
-            fullName,
-            email,
-            phone,
-            password,
-          }
-        });
+        // Create user object for login
+        const userData = {
+          id: result.id,
+          name: result.name,
+          email: result.email,
+          phone: result.phone,
+          totalCredits: result.totalCredits,
+          lifetimeCredits: result.lifetimeCredits,
+          withdrawableCredits: result.withdrawableCredits,
+          totalDonations: result.totalDonations,
+          isAdmin: result.isAdmin,
+          token: result.token,
+        };
+
+        // Automatically log the user in
+        await login(userData);
+
+        // Navigate to main app
+        router.replace('/(tabs)');
       } else {
-        Alert.alert('Error', result.error || 'Failed to generate OTP. Please try again.');
+        Alert.alert('Error', result.error || 'Failed to create account. Please try again.');
       }
     } catch (error: any) {
       console.error('Signup error:', error);

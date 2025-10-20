@@ -91,7 +91,6 @@ const donationRoutes = require('./routes/donations');
 const userRoutes = require('./routes/users');
 const withdrawalRoutes = require('./routes/withdrawals');
 const uploadRoutes = require('./routes/uploads');
-const otpRoutes = require('./routes/otp');
 const settingsRoutes = require('./routes/settings');
 
 // Use routes
@@ -100,7 +99,6 @@ app.use('/api/donations', donationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/withdrawals', withdrawalRoutes);
 app.use('/api/upload', uploadRoutes);
-app.use('/api/otp', otpRoutes);
 app.use('/api/settings', settingsRoutes);
 
 // Additional CORS headers for API routes
