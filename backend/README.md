@@ -8,7 +8,6 @@ This is the backend API for the Donaro App, built with Node.js, Express, Prisma 
 - [Donations](#donations)
 - [Withdrawals](#withdrawals)
 - [Image Upload](#image-upload)
-- [OTP Verification](#otp-verification)
 - [Real-time Events](#real-time-events)
 
 ## Authentication
@@ -554,74 +553,6 @@ selfiePhoto: <file>
 ```json
 {
   "imagePath": "/uploads/selfie-photo-optimized.jpg"
-}
-```
-
-## OTP Verification
-
-The app now uses email-based OTP verification instead of SMS to eliminate costs. The OTP system uses Nodemailer with configurable email services.
-
-### Configuration
-
-To configure a real email service, update the `.env` file with your email service credentials:
-
-```env
-# Email Configuration
-EMAIL_SERVICE=gmail
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_app_password
-```
-
-Supported email services:
-- Gmail (requires App Password)
-- Other services supported by Nodemailer
-
-### Security Features
-
-1. Rate limiting: Maximum 5 OTP requests per 15 minutes per IP
-2. Failed attempt tracking: Maximum 3 failed attempts per OTP
-3. Automatic cleanup: Expired OTPs are automatically invalidated
-4. One-time use: OTPs are deleted after successful verification
-
-### Generate OTP
-```
-POST /api/otp/generate
-```
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "OTP sent successfully to your email"
-}
-```
-
-### Verify OTP
-```
-POST /api/otp/verify
-```
-
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "otp": "123456"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "OTP verified successfully",
-  "verified": true
 }
 ```
 

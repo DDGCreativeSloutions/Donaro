@@ -7,15 +7,15 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 // EmailJS removed - backend now handles all email sending
 
@@ -45,11 +45,6 @@ const isValidUrl = (url: string): boolean => {
 
     // Allow IP addresses for development
     if (hostname.match(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/)) {
-      return true;
-    }
-
-    // Allow Vercel deployments
-    if (hostname.endsWith('.vercel.app') || hostname === 'donaro-backend.vercel.app') {
       return true;
     }
 
@@ -137,23 +132,40 @@ const SignupScreen = () => {
     
     setIsLoading(true);
     try {
+<<<<<<< HEAD
+      // Directly register the user
+=======
       // Register user directly with backend
+>>>>>>> fe435b62734902fda37eab862c5e36848fa50169
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+<<<<<<< HEAD
+        body: JSON.stringify({ 
+          name: fullName,
+          email,
+          phone,
+          password
+=======
         body: JSON.stringify({
           name: fullName,
           email,
           phone,
           password,
+>>>>>>> fe435b62734902fda37eab862c5e36848fa50169
         }),
       });
 
       const result = await response.json();
 
       if (response.ok && result.token) {
+<<<<<<< HEAD
+        console.log('✅ Account created successfully');
+        // Login the user directly
+        login(result);
+=======
         console.log('✅ User registered successfully');
 
         // Create user object for login
@@ -174,6 +186,7 @@ const SignupScreen = () => {
         await login(userData);
 
         // Navigate to main app
+>>>>>>> fe435b62734902fda37eab862c5e36848fa50169
         router.replace('/(tabs)');
       } else {
         Alert.alert('Error', result.error || 'Failed to create account. Please try again.');

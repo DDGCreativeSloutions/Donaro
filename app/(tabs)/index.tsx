@@ -149,7 +149,18 @@ const DashboardScreen = () => {
           <View style={styles.statsContainer}>
             {renderStatCard('Total Points', stats.totalCredits, 'award', colors.primary)}
             {renderStatCard('Verifications', stats.totalDonations, 'check-circle', colors.secondary)}
-            {renderStatCard('Rewards', '₹' + stats.withdrawable, 'dollar-sign', colors.accent)}
+            <TouchableOpacity 
+              style={[styles.statCard, { backgroundColor: colors.card }]}
+              onPress={() => router.push('/(tabs)/rewards')}
+            >
+              <View style={[styles.statIconContainer, { backgroundColor: `${colors.accent}20` }]}>
+                <Text style={{ fontSize: 24, color: colors.accent }}>₹</Text>
+              </View>
+              <View style={styles.statTextContainer}>
+                <Text style={[styles.statValue, { color: colors.text }]}>{'₹' + stats.withdrawable}</Text>
+                <Text style={[styles.statTitle, { color: colors.gray }]}>Rewards</Text>
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Quick Actions */}

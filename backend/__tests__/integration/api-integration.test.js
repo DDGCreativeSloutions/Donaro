@@ -17,7 +17,6 @@ describe('API Integration Tests', () => {
     // Clean up test database
     await prisma.$executeRaw`DELETE FROM Withdrawal`;
     await prisma.$executeRaw`DELETE FROM Donation`;
-    await prisma.$executeRaw`DELETE FROM OTP`;
     await prisma.$executeRaw`DELETE FROM User`;
   });
 
@@ -25,7 +24,6 @@ describe('API Integration Tests', () => {
     // Clean up after tests
     await prisma.$executeRaw`DELETE FROM Withdrawal`;
     await prisma.$executeRaw`DELETE FROM Donation`;
-    await prisma.$executeRaw`DELETE FROM OTP`;
     await prisma.$executeRaw`DELETE FROM User`;
     await prisma.$disconnect();
     server.close();

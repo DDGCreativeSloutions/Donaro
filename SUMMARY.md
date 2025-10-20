@@ -164,7 +164,7 @@ The app uses a points-based system where users earn credits for verified donatio
 ### Testing the Features
 
 1. **Onboarding Flow**: Experience the 3-slide introduction
-2. **Authentication**: Sign up with email/phone verification
+2. **Authentication**: Sign up with email and password
 3. **Dashboard**: View credit balance and quick actions
 4. **Make Donation**: 
    - Select donation type
@@ -188,7 +188,7 @@ The admin panel is accessible via a web browser:
 2. **GPS Spoofing Protection**: Detects fake/mock locations
 3. **Image Watermarking**: Secures proof images
 4. **Fraud Detection**: Analyzes patterns for suspicious activity
-5. **Two-factor Authentication**: Phone verification for accounts
+5. **Password-based Authentication**: Secure account access with strong passwords
 6. **Data Persistence**: Secure API service integration
 
 ## Backend Integration

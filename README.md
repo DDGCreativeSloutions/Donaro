@@ -1,84 +1,45 @@
-# Donaro App
+# Donaro - Donation Verification Platform
 
-A world-class mobile application for verifying community donations and earning rewards. Built with React Native Expo for the frontend and Node.js with Prisma ORM for the backend.
+Donaro is a mobile application that enables users to verify donations with geo-tagging, timestamps, and watermarking for authenticity. The platform includes a reward system where users earn points for verifications, track their progress, and request withdrawals.
 
-## Features
+## Key Features
 
-- **World-Class UI/UX**: Modern, engaging interface with smooth animations and transitions
-- Geo-tagging and timestamp metadata for verification photos
-- Point-based reward system and withdrawal functionality
-- Security features (GPS spoofing protection, watermarking)
-- Admin panel for verification
-- Fraud detection system
-- Real-time updates with Socket.IO
-- Cross-platform compatibility (iOS, Android, Web)
+### Core Functionality
+- **Donation Verification**: Capture photos with geo-tagging, timestamps, and watermarking for authenticity
+- **Reward System**: Earn points per verification, track progress, request withdrawals
+- **Security**: GPS spoofing detection, image watermarking
+- **Admin Panel**: HTML-based interface for verifying/rejecting donations
+- **Real-time Updates**: Socket.IO enables live sync of donation status
+- **User Experience**: Onboarding flow, smooth animations, responsive design across iOS, Android, Web
 
-## Prerequisites
+### Technical Features
+- **World-Class UI**: Beautifully designed interfaces with smooth animations
+- **Security**: JWT authentication, password strength requirements, GPS spoofing detection
+- **Real-time Updates**: Live sync of donation status using Socket.IO
+- **Responsive Design**: Works seamlessly across iOS, Android, and Web platforms
+- **Performance**: Optimized for fast loading and smooth interactions
 
-- Node.js (v14 or higher)
-- npm or yarn
-- Expo CLI
-- SQLite (for development)
+## Technology Stack
 
-## Installation
+### Frontend
+- **Mobile App**: React Native with Expo, TypeScript
+- **Navigation**: React Navigation, Expo Router
+- **UI Components**: Custom component library with buttons, inputs, cards
+- **Styling**: Expo Linear Gradient, React Native Reanimated
+- **Icons**: @expo/vector-icons
 
-### Backend Setup
+### Backend
+- **Server**: Node.js with Express
+- **Database**: Prisma ORM with SQLite (development) / PostgreSQL (production)
+- **Authentication**: JWT
+- **Real-time**: Socket.IO for live updates
+- **Image Processing**: Jimp for server-side watermarking
 
-1. Navigate to the backend directory:
-   ```
-   cd backend
-   ```
-
-2. Install dependencies:
-   ```
-   npm install
-   ```
-
-3. Set up the database:
-   ```
-   npx prisma generate
-   npx prisma migrate dev --name init
-   ```
-
-4. Start the backend server:
-   ```
-   npm run dev
-   ```
-
-   The backend server will start on http://localhost:3001
-
-### Frontend Setup
-
-1. Navigate to the root directory:
-   ```
-   cd ..
-   ```
-
-2. Install dependencies:
-   ```
-   npm install
-   ```
-
-3. Start the Expo development server:
-   ```
-   npx expo start
-   ```
-
-4. To run on an emulator or physical device:
-   - Press `a` to run on Android
-   - Press `i` to run on iOS (Mac only)
-   - Press `w` to run on web
-
-### Admin Panel
-
-The admin panel is accessible at:
-```
-http://localhost:3001/admin
-```
-
-Use the following credentials to log in as admin:
-- Email: admin@donaro.com
-- Password: [REDACTED] - Use the password set during installation or reset using the admin panel
+### Utilities
+- **Forms**: react-hook-form
+- **Location**: expo-location
+- **Camera**: expo-image-picker
+- **Environment**: dotenv
 
 ## World-Class UI Features
 
