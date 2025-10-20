@@ -58,7 +58,7 @@ const PrivacyScreen = () => {
           
           <Text style={[styles.sectionTitle, { color: colors.text }]}>6. Your Rights</Text>
           <Text style={[styles.text, { color: colors.text }]}>
-            You have the right to access, update, or delete your personal information at any time. You may also have the right to data portability and the right to object to certain processing activities.
+            You have the right to access, update, or delete your personal information at any time. You may also have the right to data portability and the right to object to certain processing activities it.
           </Text>
           
           <Text style={[styles.sectionTitle, { color: colors.text }]}>7. Children's Privacy</Text>
