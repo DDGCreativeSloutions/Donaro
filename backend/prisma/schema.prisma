@@ -56,4 +56,8 @@ model Withdrawal {
   date              String
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> fe435b62734902fda37eab862c5e36848fa50169

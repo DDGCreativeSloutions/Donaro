@@ -8,6 +8,12 @@ generator client {
 datasource db {
   provider = "postgresql"
   url = env("DATABASE_URL")
+<<<<<<< HEAD
+=======
+  // directUrl is optional and only needed for direct database connections
+  // When using Prisma Accelerate, this can be omitted or set to the same as DATABASE_URL
+  directUrl = env("DIRECT_URL")
+>>>>>>> fe435b62734902fda37eab862c5e36848fa50169
 }
 
 model User {
@@ -56,4 +62,8 @@ model Withdrawal {
   date              String
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> fe435b62734902fda37eab862c5e36848fa50169
